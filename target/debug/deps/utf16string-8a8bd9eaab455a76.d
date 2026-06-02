@@ -1,0 +1,11 @@
+C:\Users\dividicus\wireframe from image\target\debug\deps\utf16string-8a8bd9eaab455a76.d: C:\Users\dividicus\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\utf16string-0.2.0\src\lib.rs C:\Users\dividicus\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\utf16string-0.2.0\src\error.rs C:\Users\dividicus\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\utf16string-0.2.0\src\iters.rs C:\Users\dividicus\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\utf16string-0.2.0\src\slicing.rs C:\Users\dividicus\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\utf16string-0.2.0\src\utf16.rs C:\Users\dividicus\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\utf16string-0.2.0\src\wstr.rs C:\Users\dividicus\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\utf16string-0.2.0\src\wstring.rs
+
+C:\Users\dividicus\wireframe from image\target\debug\deps\libutf16string-8a8bd9eaab455a76.rmeta: C:\Users\dividicus\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\utf16string-0.2.0\src\lib.rs C:\Users\dividicus\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\utf16string-0.2.0\src\error.rs C:\Users\dividicus\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\utf16string-0.2.0\src\iters.rs C:\Users\dividicus\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\utf16string-0.2.0\src\slicing.rs C:\Users\dividicus\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\utf16string-0.2.0\src\utf16.rs C:\Users\dividicus\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\utf16string-0.2.0\src\wstr.rs C:\Users\dividicus\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\utf16string-0.2.0\src\wstring.rs
+
+C:\Users\dividicus\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\utf16string-0.2.0\src\lib.rs:
+C:\Users\dividicus\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\utf16string-0.2.0\src\error.rs:
+C:\Users\dividicus\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\utf16string-0.2.0\src\iters.rs:
+C:\Users\dividicus\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\utf16string-0.2.0\src\slicing.rs:
+C:\Users\dividicus\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\utf16string-0.2.0\src\utf16.rs:
+C:\Users\dividicus\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\utf16string-0.2.0\src\wstr.rs:
+C:\Users\dividicus\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\utf16string-0.2.0\src\wstring.rs:
