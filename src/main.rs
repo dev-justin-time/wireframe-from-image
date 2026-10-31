@@ -1,55 +1,19 @@
+mod detect;
+
 use axum::{
     extract::Multipart,
     routing::post,
     Router,
 };
+use detect::{detect_lines, DetectOptions, Line};
 use image::DynamicImage;
 use tower_http::services::ServeDir;
 use uuid::Uuid;
 
 #[derive(Clone, Debug)]
-struct Line {
-    x1: f32,
-    y1: f32,
-    x2: f32,
-    y2: f32,
-}
-
-#[derive(Clone, Debug)]
 struct Mesh {
     vertices: Vec<[f32; 3]>,
     edges: Vec<[usize; 2]>,
-}
-
-fn extract_lines(img: &DynamicImage) -> Vec<Line> {
-    let gray = img.to_luma8();
-    let mut lines = Vec::new();
-
-    for y in 0..gray.height() {
-        let mut start = None;
-
-        for x in 0..gray.width() {
-            let pixel = gray.get_pixel(x, y)[0];
-
-            if pixel < 120 {
-                if start.is_none() {
-                    start = Some(x);
-                }
-            } else if let Some(s) = start {
-                if x - s > 8 {
-                    lines.push(Line {
-                        x1: s as f32,
-                        y1: y as f32,
-                        x2: x as f32,
-                        y2: y as f32,
-                    });
-                }
-                start = None;
-            }
-        }
-    }
-
-    lines
 }
 
 fn extrude(lines: &[Line], depth: f32) -> Mesh {
@@ -96,6 +60,48 @@ fn mesh_to_obj(mesh: &Mesh) -> String {
     out
 }
 
+fn extract_lines(img: &DynamicImage) -> Vec<Line> {
+    detect_lines(&img.to_luma8(), DetectOptions::default())
+}
+
+/// Run detection on a single image and report the segments, so fixture results
+/// can be compared without going through the browser.
+fn detect_cli(path: &str) {
+    let img = match image::open(path) {
+        Ok(img) => img,
+        Err(err) => {
+            eprintln!("cannot read {path}: {err}");
+            std::process::exit(1);
+        }
+    };
+
+    let lines = extract_lines(&img);
+
+    println!("{path}: {} segments", lines.len());
+    for line in &lines {
+        println!(
+            "  ({:.1}, {:.1}) -> ({:.1}, {:.1})  len={:.1}",
+            line.x1,
+            line.y1,
+            line.x2,
+            line.y2,
+            line.length()
+        );
+    }
+
+    let mesh = extrude(&lines, 10.0);
+
+    if let Err(err) = std::fs::create_dir_all("outputs") {
+        eprintln!("cannot create outputs dir: {err}");
+        return;
+    }
+    let out = format!("outputs/{}.obj", Uuid::new_v4());
+    match std::fs::write(&out, mesh_to_obj(&mesh)) {
+        Ok(()) => println!("wrote {out}"),
+        Err(err) => eprintln!("cannot write {out}: {err}"),
+    }
+}
+
 async fn upload_file(
     mut multipart: Multipart,
 ) -> Result<String, String> {
@@ -135,6 +141,12 @@ async fn upload_file(
 
 #[tokio::main]
 async fn main() {
+    // `cargo run -- <image>` inspects one image; no argument starts the server.
+    if let Some(path) = std::env::args().nth(1) {
+        detect_cli(&path);
+        return;
+    }
+
     tracing_subscriber::fmt::init();
 
     std::fs::create_dir_all("outputs")
