@@ -1,7 +1,7 @@
 # Blueprint to 3D Wireframe Converter
 
-Turns a black-and-white blueprint PNG into an extruded 3D wireframe and exports it
-as an OBJ file.
+Turns a black-and-white blueprint PNG — or a vector PDF — into an extruded 3D wireframe and exports it
+as OBJ or glTF. A raster is read from its ink; a PDF is read from its own paths.
 
 ## Usage
 
@@ -15,6 +15,12 @@ cargo run -- fixtures/floor_plan.png --mm-per-px 10 --write-plan outputs/plan.js
 
 # Machine-readable plan on stdout (walls and room polygons)
 cargo run -- fixtures/floor_plan.png --json
+
+# A PDF goes through PDFium: paths -> segments -> the same plan and mesh
+cargo run -- "Southern Farmhouse - Drawing Set - Jay Osborne 2023-02-01.pdf" --mm-per-pt 35.28 --gltf outputs/plan.gltf
+
+# Only the glTF, alongside the OBJ every run writes
+cargo run -- fixtures/floor_plan.png --gltf outputs/plan.gltf
 
 # No argument starts the web server on http://127.0.0.1:3000
 cargo run
@@ -31,6 +37,9 @@ cargo test
 | `--stud-spacing <mm>` | `406` | Stud centres for the framing count. |
 | `--write-plan <path>` | — | Write the plan JSON (`units`, `wallHeight`, `studSpacingMm`, `walls`, `rooms`) used by `ports/`. |
 | `--json` | — | Print that plan JSON to stdout. |
+| `--mm-per-pt <n>` | `35.28` | PDF only: millimetres of building per PDF point. 35.28 is a 1:100 plan at 72 dpi. |
+| `--page <n>` | `0` | PDF only: zero-based page to read. |
+| `--gltf <path>` | beside the OBJ | Write a glTF 2.0 LINES model instead of `outputs/<uuid>.gltf`. |
 
 Upload endpoint: `POST /upload` with a multipart body containing one image field,
 which returns the path of the generated OBJ under `/outputs/`.
@@ -39,6 +48,35 @@ which returns the path of the generated OBJ under `/outputs/`.
 curl -F "file=@fixtures/floor_plan.png" http://127.0.0.1:3000/upload
 ```
 
+## PDF vector extraction
+
+A PDF is not a picture of a plan: every wall in it is a path object with real
+co-ordinates. `src/pdf.rs` binds PDFium, walks the page objects, keeps the path
+objects, converts their segments into the same `Line` struct the raster detector
+returns (in PDF points, y flipped to grow down the page), and from there the plan
+builder, the takeoff and both exporters run unchanged.
+
+```text
+PDF -> PDFium -> path objects -> segments -> Line[] -> walls, rooms, takeoff
+                                                   -> extrude -> OBJ / glTF
+```
+
+Scale: one PDF point is 1/72", so `--mm-per-pt` is the drawing ratio times
+0.3528 — `35.28` for 1:100, `17.64` for 1:50. The port's default is 35.28.
+
+**PDFium is not vendored.** Put `pdfium.dll` / `libpdfium.so` on the path, or
+set `PDFIUM_DYNAMIC_LIB_PATH` to the library or the directory holding it. Without
+it the PDF path reports that and exits; the image path never loads it.
+
+**Curves become chords.** PDFium's path API exposes a segment's end point only,
+not a cubic's control points, so a bezier is emitted as the straight line between
+its endpoints. That is exact for the polylines CAD exports use for walls, and
+slightly short for a curved wall or a door-swing arc — the count of such segments
+is printed as `curves` so you can see if a page depends on them.
+
+The studio accepts a PDF upload to the same endpoint and takes its scale from
+`mmPerPt`.
+
 ## Studio
 
 `cargo run` serves the studio at <http://127.0.0.1:3000>; `PORT=8080 cargo run` moves
@@ -46,8 +84,8 @@ it. `static/index.html` is the shell, `static/app.js` holds the screens — plai
 modules, no build step, no dependencies.
 
 One endpoint feeds all of it: `POST /api/plan` takes the same image plus optional
-`mmPerPx`, `wallHeight` and `studSpacing` fields and returns the detected walls and
-rooms, the takeoff, the plan JSON and the URL of the OBJ to draw.
+`mmPerPx`, `mmPerPt`, `wallHeight` and `studSpacing` fields and returns the detected walls and
+rooms, the takeoff, the plan JSON and the URLs of the OBJ and glTF to draw.
 
 ```bash
 curl -F "file=@fixtures/floor_plan.png" -F "mmPerPx=10" http://127.0.0.1:3000/api/plan

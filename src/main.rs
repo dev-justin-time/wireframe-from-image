@@ -1,8 +1,11 @@
 mod detect;
+mod gltf;
+mod pdf;
 mod plan;
 
 use axum::{
     extract::Multipart,
+    http::StatusCode,
     routing::post,
     Json,
     Router,
@@ -70,17 +73,24 @@ fn extract_lines(img: &DynamicImage) -> Vec<Line> {
 struct Cli {
     path: String,
     mm_per_px: f32,
+    mm_per_pt: f32,
+    page: usize,
     wall_height: f32,
     stud_spacing_mm: f32,
     json: bool,
     write_plan: Option<String>,
+    gltf: Option<String>,
 }
 
 fn usage() -> &'static str {
     "usage:
-  blueprint3d <image> [--mm-per-px <mm>] [--wall-height <m>] [--stud-spacing <mm>]
-                      [--write-plan <plan.json>] [--json]
-  blueprint3d                 start the web server on http://127.0.0.1:3000"
+  blueprint3d <image|plan.pdf> [--mm-per-px <mm>] [--mm-per-pt <mm>] [--page <n>]
+                               [--wall-height <m>] [--stud-spacing <mm>]
+                               [--gltf <model.gltf>] [--write-plan <plan.json>] [--json]
+  blueprint3d                 start the web server on http://127.0.0.1:3000
+
+  A PDF is read from its vector paths instead of its pixels; --mm-per-pt is
+  millimetres of building per PDF point, 35.28 for a 1:100 plan."
 }
 
 /// `None` means "no image given": start the server.
@@ -88,17 +98,21 @@ fn parse_args(args: &[String]) -> Option<Cli> {
     let mut cli = Cli {
         path: String::new(),
         mm_per_px: 10.0,
+        mm_per_pt: 35.28,
+        page: 0,
         wall_height: 2.7,
         stud_spacing_mm: 406.0,
         json: false,
         write_plan: None,
+        gltf: None,
     };
 
     let mut index = 0;
     while index < args.len() {
         let arg = args[index].as_str();
         match arg {
-            "--mm-per-px" | "--wall-height" | "--stud-spacing" | "--write-plan" => {
+            "--mm-per-px" | "--mm-per-pt" | "--page" | "--wall-height" | "--stud-spacing"
+            | "--write-plan" | "--gltf" => {
                 index += 1;
                 let value = match args.get(index) {
                     Some(value) => value.clone(),
@@ -109,10 +123,13 @@ fn parse_args(args: &[String]) -> Option<Cli> {
                 };
                 match arg {
                     "--mm-per-px" => cli.mm_per_px = value.parse().unwrap_or(cli.mm_per_px),
+                    "--mm-per-pt" => cli.mm_per_pt = value.parse().unwrap_or(cli.mm_per_pt),
+                    "--page" => cli.page = value.parse().unwrap_or(cli.page),
                     "--wall-height" => cli.wall_height = value.parse().unwrap_or(cli.wall_height),
                     "--stud-spacing" => {
                         cli.stud_spacing_mm = value.parse().unwrap_or(cli.stud_spacing_mm)
                     }
+                    "--gltf" => cli.gltf = Some(value),
                     _ => cli.write_plan = Some(value),
                 }
             }
@@ -173,30 +190,80 @@ fn print_plan(plan: &Plan) {
     );
 }
 
-/// Run detection on one image, report the plan, write the OBJ and (optionally)
-/// the feature-suite plan JSON.
+/// Where the geometry came from. A PDF carries its own vectors; a raster has
+/// to be read for ink.
+enum Source {
+    Image(DynamicImage),
+    Pdf(pdf::PdfGeometry),
+}
+
+/// Read one drawing, report the plan, write the OBJ and glTF and (optionally)
+/// the feature-suite plan JSON. A PDF is read from its vector paths, an image
+/// from its ink; everything downstream is the same.
 fn inspect(cli: Cli) {
-    let img = match image::open(&cli.path) {
-        Ok(img) => img,
-        Err(err) => {
-            eprintln!("cannot read {}: {err}", cli.path);
-            std::process::exit(1);
+    let is_pdf = cli.path.to_ascii_lowercase().ends_with(".pdf");
+
+    let source = if is_pdf {
+        let options = pdf::PdfOptions {
+            page: cli.page,
+            mm_per_pt: cli.mm_per_pt,
+            ..Default::default()
+        };
+        match pdf::extract(&cli.path, options) {
+            Ok(geometry) => Source::Pdf(geometry),
+            Err(err) => {
+                eprintln!("{err}");
+                std::process::exit(1);
+            }
+        }
+    } else {
+        match image::open(&cli.path) {
+            Ok(img) => Source::Image(img),
+            Err(err) => {
+                eprintln!("cannot read {}: {err}", cli.path);
+                std::process::exit(1);
+            }
         }
     };
 
-    let lines = extract_lines(&img);
+    let (lines, width, height, mm_per_px) = match &source {
+        Source::Image(img) => (
+            extract_lines(img),
+            img.width() as f32,
+            img.height() as f32,
+            cli.mm_per_px,
+        ),
+        Source::Pdf(geometry) => (
+            geometry.lines.clone(),
+            geometry.width_pt,
+            geometry.height_pt,
+            geometry.mm_per_pt,
+        ),
+    };
 
     let options = PlanOptions {
-        mm_per_px: cli.mm_per_px,
+        mm_per_px,
         wall_height: cli.wall_height,
         stud_spacing_mm: cli.stud_spacing_mm,
-        image_width: img.width(),
-        image_height: img.height(),
+        image_width: width.round() as u32,
+        image_height: height.round() as u32,
         ..PlanOptions::default()
     };
     let plan = build_plan(&lines, options);
 
     println!("{}: {} segments", cli.path, lines.len());
+    if let Source::Pdf(geometry) = &source {
+        println!(
+            "pdf: page {} of {} · {:.0} × {:.0} pt at {:.2} mm/pt · {} vector paths · {} curves",
+            geometry.page_index + 1,
+            geometry.pages,
+            geometry.width_pt,
+            geometry.height_pt,
+            geometry.mm_per_pt,
+            geometry.paths,
+            geometry.curves
+        );
+    }
     for line in &lines {
         println!(
             "  ({:.1}, {:.1}) -> ({:.1}, {:.1})  len={:.1}",
@@ -249,6 +316,21 @@ fn inspect(cli: Cli) {
         Ok(()) => println!("wrote {out}"),
         Err(err) => eprintln!("cannot write {out}: {err}"),
     }
+
+    let gltf_path = cli
+        .gltf
+        .clone()
+        .unwrap_or_else(|| out.trim_end_matches(".obj").to_string() + ".gltf");
+    match std::fs::write(&gltf_path, gltf::mesh_to_gltf(&mesh, &project)) {
+        Ok(()) => {
+            let summary = gltf::summary(&mesh);
+            println!(
+                "wrote {gltf_path} (glTF LINES: {} vertices, {} edges)",
+                summary["vertices"], summary["edges"]
+            );
+        }
+        Err(err) => eprintln!("cannot write {gltf_path}: {err}"),
+    }
 }
 
 async fn upload_file(
@@ -292,10 +374,20 @@ async fn upload_file(
 /// extractor built, the takeoff that follows from it, and the OBJ to view.
 /// Optional text fields `mmPerPx`, `wallHeight` and `studSpacing` override the
 /// CLI defaults.
-async fn api_plan(mut multipart: Multipart) -> Result<Json<serde_json::Value>, String> {
+async fn api_plan(multipart: Multipart) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    // `Result<_, String>` renders as 200 with the message as the body, which the
+    // studio would read as success; a rejected upload has to fail as a status.
+    plan_json(multipart)
+        .await
+        .map(Json)
+        .map_err(|message| (StatusCode::BAD_REQUEST, message))
+}
+
+async fn plan_json(mut multipart: Multipart) -> Result<serde_json::Value, String> {
     let mut bytes: Option<axum::body::Bytes> = None;
     let mut name = String::from("plan");
     let mut mm_per_px = 10.0f32;
+    let mut mm_per_pt = 35.28f32;
     let mut wall_height = 2.7f32;
     let mut stud_spacing = 406.0f32;
 
@@ -308,6 +400,7 @@ async fn api_plan(mut multipart: Multipart) -> Result<Json<serde_json::Value>, S
             let text = field.text().await.map_err(|e| e.to_string())?;
             match field_name.as_str() {
                 "mmPerPx" => mm_per_px = text.parse().unwrap_or(mm_per_px),
+                "mmPerPt" => mm_per_pt = text.parse().unwrap_or(mm_per_pt),
                 "wallHeight" => wall_height = text.parse().unwrap_or(wall_height),
                 "studSpacing" => stud_spacing = text.parse().unwrap_or(stud_spacing),
                 _ => {}
@@ -316,15 +409,39 @@ async fn api_plan(mut multipart: Multipart) -> Result<Json<serde_json::Value>, S
     }
 
     let bytes = bytes.ok_or("No file uploaded")?;
-    let image = image::load_from_memory(&bytes).map_err(|e| e.to_string())?;
-    let lines = extract_lines(&image);
+    // A PDF is read from its vector paths; note that this needs the pdfium
+    // library at runtime, which the raster path never touches.
+    let is_pdf = name.to_ascii_lowercase().ends_with(".pdf") || bytes.starts_with(b"%PDF");
+    let (lines, width, height, mm_per_px) = if is_pdf {
+        let temp = std::env::temp_dir().join(format!("blueprint3d-{}.pdf", Uuid::new_v4()));
+        std::fs::write(&temp, &bytes).map_err(|e| e.to_string())?;
+        let extracted = pdf::extract(
+            &temp.to_string_lossy(),
+            pdf::PdfOptions {
+                mm_per_pt: mm_per_pt,
+                ..Default::default()
+            },
+        );
+        let _ = std::fs::remove_file(&temp);
+        let geometry = extracted?;
+        (geometry.lines, geometry.width_pt, geometry.height_pt, mm_per_pt)
+    } else {
+        let image = image::load_from_memory(&bytes).map_err(|e| e.to_string())?;
+        let lines = extract_lines(&image);
+        (
+            lines,
+            image.width() as f32,
+            image.height() as f32,
+            mm_per_px,
+        )
+    };
 
     let options = PlanOptions {
         mm_per_px,
         wall_height,
         stud_spacing_mm: stud_spacing,
-        image_width: image.width(),
-        image_height: image.height(),
+        image_width: width.round() as u32,
+        image_height: height.round() as u32,
         ..PlanOptions::default()
     };
     let plan = build_plan(&lines, options);
@@ -338,6 +455,9 @@ async fn api_plan(mut multipart: Multipart) -> Result<Json<serde_json::Value>, S
     std::fs::create_dir_all("outputs").map_err(|e| e.to_string())?;
     let filename = format!("outputs/{}.obj", Uuid::new_v4());
     std::fs::write(&filename, mesh_to_obj(&mesh)).map_err(|e| e.to_string())?;
+    let gltf_filename = format!("outputs/{}.gltf", Uuid::new_v4());
+    std::fs::write(&gltf_filename, gltf::mesh_to_gltf(&mesh, &project))
+        .map_err(|e| e.to_string())?;
 
     let takeoff = plan.takeoff();
     let wall_rows: Vec<serde_json::Value> = plan
@@ -363,7 +483,7 @@ async fn api_plan(mut multipart: Multipart) -> Result<Json<serde_json::Value>, S
         })
         .collect();
 
-    Ok(Json(serde_json::json!({
+    Ok(serde_json::json!({
         "project": project,
         "image": name,
         "mmPerPx": mm_per_px,
@@ -373,6 +493,8 @@ async fn api_plan(mut multipart: Multipart) -> Result<Json<serde_json::Value>, S
         "depthM": plan.depth_m,
         "segments": lines.len(),
         "obj": format!("/{filename}"),
+        "gltf": format!("/{gltf_filename}"),
+        "source": if is_pdf { "pdf" } else { "raster" },
         "plan": plan.to_json(&project),
         "walls": wall_rows,
         "rooms": room_rows,
@@ -389,7 +511,7 @@ async fn api_plan(mut multipart: Multipart) -> Result<Json<serde_json::Value>, S
             "platesM": takeoff.plates_m,
             "sheathingPanels": takeoff.sheathing_panels
         }
-    })))
+    }))
 }
 
 /// The routes, so the tests can drive the same app the server serves.
@@ -590,6 +712,7 @@ mod tests {
             text.starts_with("v "),
             "{fixture}: {path} is not an OBJ"
         );
+        let vertices = text.lines().filter(|line| line.starts_with("v ")).count();
         let edges = text.lines().filter(|line| line.starts_with("l ")).count();
         assert_eq!(
             edges,
@@ -597,6 +720,28 @@ mod tests {
             "{fixture}: {path} should have 4 edges per wall"
         );
         let _ = std::fs::remove_file(path);
+
+        // The glTF the studio offers must describe the same line set.
+        assert_eq!(json["source"], "raster", "{fixture}: source");
+        let gltf = json["gltf"].as_str().expect("gltf");
+        assert!(gltf.starts_with("/outputs/"), "{fixture}: gltf path {gltf}");
+        let gltf_path = gltf.trim_start_matches('/');
+        let document: Value = serde_json::from_str(
+            &std::fs::read_to_string(gltf_path)
+                .unwrap_or_else(|err| panic!("{fixture}: read {gltf_path}: {err}")),
+        )
+        .unwrap_or_else(|err| panic!("{fixture}: {gltf_path} is not JSON: {err}"));
+
+        assert_eq!(document["asset"]["version"], "2.0");
+        assert_eq!(document["meshes"][0]["primitives"][0]["mode"], 1);
+        assert_eq!(document["accessors"][0]["count"], vertices);
+        assert_eq!(document["accessors"][1]["count"], edges * 2);
+        assert_eq!(
+            document["buffers"][0]["byteLength"],
+            vertices * 12 + edges * 8,
+            "{fixture}: glTF buffer size"
+        );
+        let _ = std::fs::remove_file(gltf_path);
 
         json
     }

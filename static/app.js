@@ -209,12 +209,13 @@ function planResult(host) {
       [d.walls.length, 'walls', `${f(d.takeoff.wallLength, 2)} m`],
       [d.rooms.length, 'rooms', `${f(d.takeoff.floorArea, 2)} m²`],
       [f(d.takeoff.floorArea, 1), 'm² floor', `${f(d.takeoff.volume, 1)} m³`],
-      [d.segments, 'segments', `${f(d.mmPerPx, 1)} mm/px`],
+      [d.segments, 'segments', `${f(d.mmPerPx, 1)} mm/px${d.source === 'pdf' ? ' · PDF vectors' : ''}`],
     ])}
     <canvas class="wire" id="wire"></canvas>
     <p class="hint">Room polygons are filled behind the walls. Drag to pan, wheel to zoom.
       The plan is saved in this browser, so every screen keeps it after a reload.
       <a class="btn" href="${d.obj}" download>Download OBJ</a>
+      ${d.gltf ? `<a class="btn" href="${d.gltf}" download>Download glTF</a>` : ''}
       <a class="btn" href="#" id="dl-plan">Download plan JSON</a></p>
     ${table([
       ['Wall length', f(d.takeoff.wallLength), 'm'],
