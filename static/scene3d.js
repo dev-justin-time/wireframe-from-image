@@ -15,6 +15,7 @@ import {
   applyElevationVisibility,
   ELEVATION_SIDES,
 } from './engines/scene/scene-elevation.js';
+import { itemBoxes, itemSpace } from './plan-items.js';
 
 // Warm/cool alternates so adjacent rooms on the same plan read apart.
 const ROOM_FLOOR_COLOURS = [0xe4d9c6, 0xd7e3ea, 0xe6e0d2, 0xd9e2d6, 0xe8dcdc, 0xdfe0e8];
@@ -36,6 +37,11 @@ export class PlanViewer {
     this.bounds = null;
     this.wallMeshes = [];
     this.roomSlabs = [];
+    this.itemMeshes = new Map();
+    this.itemSpace = null;
+    // Teardown hooks for the listeners the scene mounts outside three.js (the
+    // elevation drag binds to the window, so disposing the viewer is not enough).
+    this.disposers = [];
     this.grid = null;
     this.options = { height: 2.7, thickness: 0.15, cutaway: true, plates: true };
 
@@ -359,6 +365,28 @@ export class PlanViewer {
       });
     }
 
+    // Placed items: one box each, tagged so the elevation drag can pick it by
+    // id. The plan holds the truth; the mesh is only the view of it.
+    this.itemMeshes = new Map();
+    // Built on the same rectangle the walls and room plates were centred on,
+    // which is the mapping the elevation drag places meshes with.
+    this.itemSpace = itemSpace(plan, bounds);
+    for (const box of itemBoxes(plan)) {
+      const height = Math.max(box.height, 0.02);
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(Math.max(box.width, 0.02), height, Math.max(box.depth, 0.02)),
+        new THREE.MeshStandardMaterial({ color: box.color, roughness: 0.72, metalness: 0.04 })
+      );
+      mesh.position.set(box.x - centre.x, box.bottom + height / 2, box.z - centre.z);
+      mesh.rotation.y = -(box.rotation || 0);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      mesh.userData.type = 'item';
+      mesh.userData.id = box.id;
+      this.itemMeshes.set(box.id, mesh);
+      this.planGroup.add(mesh);
+    }
+
     this.bounds = bounds;
     // The plan is built around the origin, so the elevation helpers need the
     // bounds in that same space.
@@ -519,6 +547,7 @@ export class PlanViewer {
     this.planGroup.clear();
     this.wallMeshes = [];
     this.roomSlabs = [];
+    this.itemMeshes = new Map();
     this.bounds = null;
   }
 
@@ -528,13 +557,22 @@ export class PlanViewer {
       walls: this.wallMeshes.length,
       openings: (this.plan?.openings || []).length,
       rooms: this.roomSlabs.length,
+      items: this.itemMeshes.size,
       webgl2: Boolean(this.renderer.capabilities.isWebGL2),
       drawCalls: this.renderer.info.render.calls,
     };
   }
 
+  /** Teardown for listeners mounted outside the renderer, run on dispose. */
+  addDisposer(fn) {
+    if (typeof fn === 'function') this.disposers.push(fn);
+  }
+
   /** Stop the loop and release the GL context; the router calls this on exit. */
   dispose() {
+    for (const dispose of this.disposers.splice(0)) {
+      try { dispose(); } catch { /* a failed teardown must not block the rest */ }
+    }
     cancelAnimationFrame(this.frame);
     this.resizeObserver?.disconnect();
     this.clearPlan();

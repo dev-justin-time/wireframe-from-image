@@ -14,8 +14,11 @@
 // Environment: BASE (http://127.0.0.1:3000), CDP_PORT (9223), ROUTES (JSON
 // array of screens), OUT (outputs/ui), FIXTURE (fixtures/floor_plan.png),
 // SHOTS=0 to skip the screenshots, ELEVATIONS=0 to skip the elevation sweep.
-// With scene-3d in the route list it also frames the four elevation sides, saves
-// one clipped screenshot per side and compares the pixels and the near-wall cut.
+// With scene-3d in the route list it also frames the four elevation sides, renders
+// each one to an image and compares it with the baseline recorded in
+// OUT/baseline, so a change in what an elevation looks like fails the run instead
+// of only being visible in report.json. Re-record the baselines after an intended
+// change with UPDATE_BASELINES=1.
 // Run it from the repository root: the fixture path and the screenshot directory
 // are relative to it.
 import fs from 'node:fs';
@@ -27,6 +30,11 @@ const OUT = process.env.OUT || 'outputs/ui';
 const FIXTURE = process.env.FIXTURE || 'fixtures/floor_plan.png';
 const SHOTS = process.env.SHOTS !== '0';
 const ELEVATIONS = process.env.ELEVATIONS !== '0';
+// The recorded elevation images: one PNG per side plus the manifest that says
+// which bytes each one is. Kept under OUT so a run writes nothing outside it.
+const BASELINE_DIR = process.env.BASELINES || `${OUT}/baseline`;
+const BASELINE_MANIFEST = `${BASELINE_DIR}/elevations.json`;
+const UPDATE_BASELINES = process.env.UPDATE_BASELINES === '1';
 fs.mkdirSync(OUT, { recursive: true });
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -246,6 +254,74 @@ for (const route of ROUTES) await visit(route, { shot: shots.has(route) });
 // 4. elevation sides: set the side, carry it into the screenshot, compare views.
 const SIDES = ['front', 'back', 'left', 'right'];
 const elevationRows = [];
+// The captured PNG of each view, keyed by the side name the row carries.
+const elevationBytes = new Map();
+
+const hashOf = (bytes) => createHash('sha256').update(bytes).digest('hex');
+
+function loadBaseline() {
+  try { return JSON.parse(fs.readFileSync(BASELINE_MANIFEST, 'utf8')); } catch { return null; }
+}
+
+/** Record what each elevation looks like now, images next to the manifest. */
+function writeBaseline() {
+  fs.mkdirSync(BASELINE_DIR, { recursive: true });
+  const views = {};
+  for (const row of elevationRows) {
+    const bytes = elevationBytes.get(row.side);
+    if (!bytes) continue;
+    fs.writeFileSync(`${BASELINE_DIR}/${row.side}.png`, bytes);
+    views[row.side] = {
+      hash: hashOf(bytes),
+      bytes: bytes.length,
+      width: row.width,
+      height: row.height,
+      hidden: row.hidden,
+      active: row.active,
+    };
+  }
+  fs.writeFileSync(BASELINE_MANIFEST, `${JSON.stringify({
+    note: 'Elevation baselines for tools/ui-check.mjs. Re-record with UPDATE_BASELINES=1.',
+    plan: upload?.status ?? null,
+    views,
+  }, null, 2)}\n`);
+  return views;
+}
+
+/** Every way the live view has drifted from what was recorded. */
+function compareBaseline(baseline) {
+  const problems = [];
+  for (const row of elevationRows) {
+    const expected = baseline?.views?.[row.side];
+    row.baseline = expected?.hash ?? null;
+    if (!expected) {
+      problems.push(`no stored baseline for ${row.side}`);
+      continue;
+    }
+    const bytes = elevationBytes.get(row.side);
+    if (!bytes) {
+      problems.push(`${row.side} rendered nothing to compare`);
+      continue;
+    }
+    if (expected.width !== row.width || expected.height !== row.height) {
+      problems.push(`${row.side} canvas resized ${expected.width}x${expected.height} -> ${row.width}x${row.height}`);
+    }
+    if (expected.hash !== hashOf(bytes)) {
+      problems.push(`${row.side} changed: ${expected.hash.slice(0, 16)}/${expected.bytes}B -> ${row.hash}/${row.bytes}B`);
+      continue;
+    }
+    // The stored image has to be the one the manifest describes, or a stale
+    // picture would pass as a baseline nobody can look at.
+    let stored = null;
+    try { stored = fs.readFileSync(`${BASELINE_DIR}/${row.side}.png`); } catch { /* reported below */ }
+    if (!stored) problems.push(`${row.side} baseline image is missing (${row.side}.png)`);
+    else if (hashOf(stored) !== expected.hash) problems.push(`${row.side} baseline image no longer matches its manifest hash`);
+    if ((expected.hidden || []).join(',') !== (row.hidden || []).join(',')) {
+      problems.push(`${row.side} cuts different walls than the baseline`);
+    }
+  }
+  return problems;
+}
 
 async function elevationView(side) {
   const refused = await evaluate(`(() => {
@@ -278,7 +354,9 @@ async function elevationView(side) {
   if (state.error) return { side, error: state.error };
 
   const bytes = Buffer.from(String(state.dataUrl).split(',')[1] || '', 'base64');
-  if (SHOTS) fs.writeFileSync(`${OUT}/elevation-${side.replace(/^$/, 'perspective')}.png`, bytes);
+  const name = side === '' ? 'perspective' : side;
+  elevationBytes.set(name, bytes);
+  if (SHOTS) fs.writeFileSync(`${OUT}/elevation-${name}.png`, bytes);
   return {
     side,
     active: state.active,
@@ -294,6 +372,21 @@ async function elevationView(side) {
 
 async function elevationSweep() {
   console.log('\nelevation sweep');
+  // The sweep drives the scene-3d screen itself, from a fresh mount: a route list
+  // can end on a page with no viewer, and the visit before it may have nudged a
+  // form field (a hash-only navigate would keep that page alive).
+  await send('Page.navigate', { url: `${BASE}/#/scene-3d` });
+  await sleep(400);
+  await send('Page.reload', { ignoreCache: true });
+  await sleep(1200);
+  // The reload asks for favicon.ico, which this server does not serve: that 404
+  // is browser noise, not a screen error. Anything else here is real, since the
+  // page was just loaded fresh.
+  const settled = drainProblems().filter((problem) => !/favicon\.ico/.test(problem));
+  if (settled.length) {
+    failures += 1;
+    console.log(`      -> scene-3d reported ${settled.length} console error(s): ${settled.join(' | ')}`);
+  }
   for (const side of ['perspective', ...SIDES]) {
     const view = await elevationView(side === 'perspective' ? '' : side);
     // The requested label is what gets compared against viewer.elevation.
@@ -316,6 +409,26 @@ async function elevationSweep() {
   if (hashes.size !== elevationRows.length) problems.push('two views rendered the same pixels');
   if (hiddenKey(sides[0]) === hiddenKey(sides[1])) problems.push('front and back hide the same walls');
   if (hiddenKey(sides[2]) === hiddenKey(sides[3])) problems.push('left and right hide the same walls');
+
+  // The pixels themselves, against the recorded images: a shading, framing or
+  // visibility change is a failure here, not a note in report.json.
+  const baseline = loadBaseline();
+  if (UPDATE_BASELINES || !baseline) {
+    const ready = elevationRows.every((row) => !row.error) && elevationBytes.size === elevationRows.length;
+    if (ready) {
+      const views = writeBaseline();
+      console.log(`      -> ${UPDATE_BASELINES ? 're-recorded' : 'recorded'} ${Object.keys(views).length} baselines in ${BASELINE_MANIFEST}`);
+    } else {
+      problems.push('baselines could not be recorded: a view failed to render');
+    }
+  } else {
+    const drift = compareBaseline(baseline);
+    console.log(drift.length
+      ? `      -> baseline drift in ${drift.length} view(s)`
+      : '      -> all five views match the stored baselines');
+    problems.push(...drift);
+  }
+
   if (problems.length) failures += 1;
   console.log(problems.length
     ? `      -> ${problems.join(' | ')}`

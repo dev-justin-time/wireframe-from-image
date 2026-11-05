@@ -138,7 +138,7 @@ version, whether PDFium loaded, the upload cap and the free extraction slots.
 | Structure | Framing, Deck, Roof, Stair, L stair, U stair, Spiral stair, Steep stair, Stair gallery/parts/glossary, Foundation |
 | Systems | Electrical, Lighting, Plumbing |
 | Site | Landscape, Site plan |
-| Project | Dashboard, Schedule, Permits and inspections, Bid builder, Price book, Pricing, Calculator, Code rules |
+| Project | Dashboard, Schedule, Permits and inspections, Bid builder, Report, Price book, Pricing, Calculator, Code rules |
 | About | Home, Features, Gallery, About, Contact |
 
 `2D scene` and `3D scene` sit under Design: the first draws the extracted plan as
@@ -155,12 +155,21 @@ nearest it, so a wall of openings reads flat like a drawing.
 existing corner, then to a 100 mm grid; a wall ending on another splits it, and
 the ported wall graph closes the rooms and measures them as you go. Corner
 handles move a corner instead: every wall end meeting there follows it, so a
-room stays closed, and a wall that collapses is dropped. The plan itsaves is the one every other screen reads. `Plan studio` also takes vector and
+room stays closed, and a wall that collapses is dropped. The plan itsaves is the one every other screen reads. Every wall and item edit is undoable — Ctrl+Z, and Ctrl+Shift+Z or Ctrl+Y to redo — while Delete removes the selected wall and Escape clears the selection. `Plan studio` also takes vector and
 survey files: a DXF through the ported parser (LINE, LWPOLYLINE, ARC and CIRCLE
 become walls), and a KML, KMZ or GeoJSON through the ported geo reader (polygon
 rings and lines become walls, projected to metres at the survey's real size with
 north up). Neither is fitted to the viewport — they are measurements, not
-pictures. `2D scene` carries the services sheets on a second
+pictures. `Editor` also places floor items from the vendored catalogue: a sofa, a table,
+the kitchen and bathroom pieces. The plan stores them in metres, the 3D scene
+builds a box for each, and an elevation drags one along its run and up and down,
+snapping to the pieces of the same run through the ported snap helpers. The plan
+is the source of truth, so a drag saves and rebuilds; the editor lists what is
+placed with its footprint and lift.
+
+The `Report` screen puts the same plan on one printable sheet: the summary and extents, the takeoff quantities, the rooms and the contract the bid engine prices. Its print stylesheet drops the navigation and the buttons, so the print button — or Ctrl+P — saves it as a PDF with no dependency behind it.
+
+`2D scene` carries the services sheets on a second
 canvas — framing, the plumbing water/DWV/gas routes and the panel's circuits —
 because those drawings fit their own 0..W × 0..D view rather than the sheet's.
 
@@ -220,7 +229,7 @@ The copied files are unmodified; compare with `cmp` against
 `static/engines/README.md`). Every designer screen now runs on a vendored engine;
 what is still this repo's own is the foundation screen (floorplan3d has no
 foundation suite to read). The editor here is one working slice — draw, move,
-split, measure, save — not a port of `editor/editor.js`: the toolbox, item library,
+split, place, measure, save — not a port of `editor/editor.js`: the toolbox, item library,
 OCR, WebGPU, collaboration and elevation scenes were not brought over. Their
 engines are here where they are pure, their DOM shells are not. Both importers
 that ship with the engines are wired — DXF, and KML/KMZ/GeoJSON. Elevation is

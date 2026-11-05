@@ -124,6 +124,34 @@ export function removeWall(walls = [], index) {
   return walls.filter((_, at) => at !== index);
 }
 
+/** The index of the wall whose two ends are these corners, in either order. */
+export function wallBetween(walls = [], a, b, tolerance = 1e-6) {
+  if (!a || !b) return -1;
+  const same = (point, corner) => Math.hypot(n(point.x) - n(corner.x), n(point.z) - n(corner.z)) <= tolerance;
+  return walls.findIndex((wall) => {
+    const start = { x: wall.x1, z: wall.y1 };
+    const end = { x: wall.x2, z: wall.y2 };
+    return (same(start, a) && same(end, b)) || (same(start, b) && same(end, a));
+  });
+}
+
+/**
+ * Add one whole wall between two existing corners. A pair that already has a
+ * segment, or two corners in the same place, is left alone.
+ */
+export function connectCorners(walls = [], a, b) {
+  if (!a || !b) return walls;
+  if (Math.hypot(n(a.x) - n(b.x), n(a.z) - n(b.z)) < MIN_WALL_M) return walls;
+  if (wallBetween(walls, a, b) >= 0) return walls;
+  return addWall(walls, a, b);
+}
+
+/** Remove the whole wall between two existing corners, wherever it sits. */
+export function disconnectCorners(walls = [], a, b) {
+  const index = wallBetween(walls, a, b);
+  return index >= 0 ? removeWall(walls, index) : walls;
+}
+
 /** The distinct corners of a wall set, with how many wall ends meet at each. */
 export function planCorners(walls = [], tolerance = 1e-6) {
   const corners = [];
@@ -155,6 +183,52 @@ export function moveCorner(walls = [], from, to, tolerance = 1e-6) {
       };
     })
     .filter((wall) => Math.hypot(wall.x2 - wall.x1, wall.y2 - wall.y1) >= MIN_WALL_M);
+}
+
+/**
+ * Move a corner and keep the walls that meet it orthogonal.
+ *
+ * A plain `moveCorner` slides the shared end, so a corner dragged diagonally
+ * leaves one of its two walls on a slope. Here the far end of each wall that
+ * ended on the corner follows on the axis that wall already runs on: a
+ * horizontal wall's far end takes the corner's new depth, a vertical wall's far
+ * end takes its new run. Any other wall ending on that far corner follows with
+ * it, so the outline stays closed and every wall it touched stays horizontal or
+ * vertical - a rectangle resizes as a rectangle instead of growing a diagonal.
+ */
+export function orthogonalCorner(walls = [], from, to, tolerance = 1e-6) {
+  if (!from || !to) return walls;
+  const start = { x: n(from.x), z: n(from.z) };
+  const target = { x: n(to.x), z: n(to.z) };
+  const at = (x, z, point) => Math.hypot(n(x) - point.x, n(z) - point.z) <= tolerance;
+
+  // Far corners that have to follow the move, and the axis each one follows on.
+  const followers = [];
+  for (const wall of walls) {
+    const x1 = n(wall.x1), y1 = n(wall.y1), x2 = n(wall.x2), y2 = n(wall.y2);
+    const horizontal = Math.abs(y2 - y1) <= tolerance;
+    const vertical = Math.abs(x2 - x1) <= tolerance;
+    if (at(x1, y1, start)) followers.push({ x: x2, z: y2, horizontal, vertical });
+    else if (at(x2, y2, start)) followers.push({ x: x1, z: y1, horizontal, vertical });
+  }
+
+  const moved = (x, z) => {
+    if (at(x, z, start)) return { x: target.x, z: target.z };
+    for (const follower of followers) {
+      if (!at(x, z, follower)) continue;
+      // Only an axis-aligned wall can hand its far end an axis to follow;
+      // a diagonal neighbour is left where it is.
+      if (follower.horizontal && !follower.vertical) return { x, z: target.z };
+      if (follower.vertical && !follower.horizontal) return { x: target.x, z };
+    }
+    return { x, z };
+  };
+
+  return walls.map((wall) => {
+    const a = moved(n(wall.x1), n(wall.y1));
+    const b = moved(n(wall.x2), n(wall.y2));
+    return { x1: a.x, y1: a.z, x2: b.x, y2: b.z };
+  }).filter((wall) => Math.hypot(wall.x2 - wall.x1, wall.y2 - wall.y1) >= MIN_WALL_M);
 }
 
 /**

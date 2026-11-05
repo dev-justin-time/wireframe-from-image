@@ -23,6 +23,7 @@ import {
   kitchenResult,
   landscapeResult,
   bidResult,
+  bidTotals,
   scheduleResult,
   priceBookResult,
   projectRollup,
@@ -37,10 +38,17 @@ import {
 } from './stairs-bridge.js';
 import {
   planFromWalls, addWall, removeWall, snapPoint, canvasView, planCorners, moveCorner,
+  orthogonalCorner, wallBetween, connectCorners, disconnectCorners,
 } from './plan-edit.js';
 import { planFromDxf, planFromGeo } from './plan-import.js';
 import { layerModel, drawLayer, LAYER_OPTIONS } from './plan-layers.js';
+import {
+  palette, itemSpace, addItem, removeItem, itemsSummary, itemBoxes, itemObjects, applyItemObjects,
+} from './plan-items.js';
+import { createElevationDrag } from './engines/scene/scene-elevation.js';
 import { apply3DAbilities } from './engines/scene/scene-abilities.js';
+import { createHistory } from './plan-history.js';
+import { FARMHOUSE } from './demo/farmhouse/manifest.js';
 
 const GROUPS = [
   ['Design', ['plan-studio', 'editor', 'scene-2d', 'scene-3d', 'app', 'wall-designer', 'kitchen-designer', 'toolbox', 'demo', 'webgpu-demo']],
@@ -49,8 +57,8 @@ const GROUPS = [
     'stair-glossary', 'foundation-designer']],
   ['Systems', ['electrical-designer', 'lighting-designer', 'plumbing-designer']],
   ['Site', ['landscape-designer', 'site-plan']],
-  ['Project', ['project-dashboard', 'project-schedule', 'permits-inspections', 'bid-builder', 'price-book',
-    'pricing', 'calc', 'code-rules']],
+  ['Project', ['project-dashboard', 'project-schedule', 'permits-inspections', 'bid-builder', 'report',
+    'price-book', 'pricing', 'calc', 'code-rules']],
   ['About', ['index', 'features', 'gallery', 'about', 'contact']],
 ];
 
@@ -65,7 +73,7 @@ const TITLES = {
   'electrical-designer': 'Electrical designer', 'lighting-designer': 'Lighting designer',
   'plumbing-designer': 'Plumbing designer', 'landscape-designer': 'Landscape designer', 'site-plan': 'Site plan',
   'project-dashboard': 'Project dashboard', 'project-schedule': 'Schedule', 'permits-inspections': 'Permits and inspections',
-  'bid-builder': 'Bid builder', 'price-book': 'Price book', pricing: 'Pricing', calc: 'Calculator',
+  'bid-builder': 'Bid builder', report: 'Report', 'price-book': 'Price book', pricing: 'Pricing', calc: 'Calculator',
   index: 'Home', features: 'Features', gallery: 'Gallery', about: 'About', contact: 'Contact',
 };
 
@@ -804,7 +812,9 @@ function scene3D(root) {
     <p class="hint">${geometry
       ? `${geometry.walls.length} walls at ${f(geometry.height, 2)} m · ${geometry.rooms.length} rooms · `
         + `${doors} door${doors === 1 ? '' : 's'} · ${windows} window${windows === 1 ? '' : 's'} · `
-        + 'drag to orbit, wheel to zoom, right-drag to pan'
+        + `${(data()?.items ?? []).length} item${(data()?.items ?? []).length === 1 ? '' : 's'} · `
+        + 'drag to orbit, wheel to zoom, right-drag to pan; in an elevation, drag an item along '
+        + 'its run or up and down'
       : 'No plan yet — open <a href="#/plan-studio">Plan studio</a> and upload a drawing.'}</p>`;
 
   const host = root.querySelector('#scene-3d-host');
@@ -831,7 +841,12 @@ function scene3D(root) {
     cutaway: root.querySelector('#cut3').checked,
     plates: root.querySelector('#plates3').checked,
   });
-  viewer.setPlan({ walls: geometry.walls, rooms: geometry.rooms, openings: geometry.openings });
+  viewer.setPlan({
+    walls: geometry.walls,
+    rooms: geometry.rooms,
+    openings: geometry.openings,
+    items: data()?.items ?? [],
+  });
 
   // The vendored ability registry applies its 3D flags to a live scene; the
   // helpers are read at call time because every rebuild replaces the grid.
@@ -869,6 +884,48 @@ function scene3D(root) {
   root.querySelector('#t3').oninput = apply;
   root.querySelector('#cut3').onchange = apply;
   root.querySelector('#plates3').onchange = apply;
+  // Item dragging in an elevation: the ported drag projects the pointer onto a
+  // vertical plane through the piece, snaps its run and its lift to the pieces of
+  // the same run, and the plan is the source of truth on release.
+  let placedItems = itemObjects(data());
+  const elevationDrag = createElevationDrag({
+    scene: viewer.scene,
+    domElement: viewer.renderer.domElement,
+    getCamera: () => (viewer.elevation ? viewer.elevationCamera : null),
+    getSide: () => viewer.elevation,
+    getView: () => viewer.itemSpace?.view ?? { width: 0, height: 0 },
+    getFixtures: () => placedItems,
+    getObject: (id) => viewer.itemMeshes.get(id),
+    onDraggingChange: (dragging) => {
+      host.style.cursor = dragging ? 'grabbing' : '';
+    },
+    onDrag: (event) => {
+      if (event.phase !== 'move') return;
+      root.querySelector('#elev-note').textContent =
+        `dragging · lift ${f(event.lift, 2)} m · top at ${f(event.top, 2)} m · snaps to the same run`;
+    },
+    onCommit: (fixture) => {
+      const next = applyItemObjects(data(), placedItems);
+      state.data = next;
+      savePlan(next);
+      setStatus();
+      viewer.setPlan({
+        walls: next.walls, rooms: next.rooms, openings: next.openings, items: next.items,
+      });
+      if (viewer.elevation) viewer.setElevation(viewer.elevation);
+      placedItems = itemObjects(next);
+      const moved = placedItems.find((item) => item.id === fixture?.id);
+      const space = viewer.itemSpace;
+      root.querySelector('#elev-note').textContent = moved && space
+        ? `item at (${f(space.toMetres(moved.x, moved.y).x, 2)}, ${f(space.toMetres(moved.x, moved.y).z, 2)}) m `
+          + `· lift ${f(moved.elevation, 2)} m · saved`
+        : `${next.items?.length ?? 0} items`;
+    },
+  });
+  // The drag listens on the window; leaving the screen has to unbind it or the
+  // dead viewer keeps handling pointer moves.
+  viewer.addDisposer(() => elevationDrag.dispose());
+
   root.querySelector('#elev3').onchange = (event) => {
     const side = viewer.setElevation(event.target.value || null);
     root.querySelector('#elev-note').textContent = side
@@ -1006,21 +1063,40 @@ function editor(root) {
   let cursor = null;
   let down = null;
   let travel = 0;
-  const history = [];
+  const history = createHistory();
 
   root.innerHTML = `<h2>Editor</h2>
     <p class="note">Draw the walls yourself: press and drag on the canvas. An endpoint snaps to an existing
       corner, then to a 100 mm grid, and a wall ending on another wall splits it so the room closes.
-      Drag a corner handle to move that corner — every wall meeting there moves with it. Click a wall
-      to select it and press Delete to remove it. Every screen reads the plan this saves.</p>
+      Drag a corner handle to move that corner — every wall meeting there moves with it; hold Shift
+      to keep the corner on one axis so the walls stay orthogonal. Click a wall to select it and
+      press Delete to remove it. Every screen reads the plan this saves.</p>
     <div class="row">
       <label class="chk"><input type="checkbox" id="ed-snap" checked>Snap</label>
-      <button id="ed-undo">Undo</button>
+      <button id="ed-undo" disabled>Undo</button>
+      <button id="ed-redo" disabled>Redo</button>
       <button id="ed-del">Delete selected</button>
       <span class="hint" id="ed-msg"></span>
     </div>
+    <p class="hint">Ctrl+Z undoes, Ctrl+Shift+Z or Ctrl+Y redoes, Delete removes the selected wall,
+      Escape clears the selection. The history covers wall and item edits.</p>
+    <div class="row">
+      <label><span>Place</span><select id="ed-type">${palette().map((entry) =>
+        `<option value="${entry.type}">${entry.label} · ${f(entry.width, 2)} × ${f(entry.depth, 2)} m</option>`).join('')}</select></label>
+      <button id="ed-add">Add item</button>
+      <span class="hint">Placed at the plan centre; drag it along a run and up or down in a 3D elevation.</span>
+    </div>
+    <div class="row">
+      <label><span>Segment</span><select id="ed-seg-from"></select></label>
+      <label><span>to</span><select id="ed-seg-to"></select></label>
+      <button id="ed-connect">Connect corners</button>
+      <button id="ed-disconnect">Remove segment</button>
+      <span class="hint">Adds or removes the whole wall between two corners, wherever that
+        segment sits in the plan.</span>
+    </div>
     <canvas class="wire scene" id="ed-canvas"></canvas>
     <div id="ed-sum"></div>
+    <h3>Items</h3><div id="ed-items"></div>
     <h3>Walls</h3><div id="ed-walls"></div>
     <h3>Rooms</h3><div id="ed-rooms"></div>`;
 
@@ -1069,6 +1145,36 @@ function editor(root) {
     return best;
   };
 
+  /**
+   * The walls the drag in progress would commit, or null when nothing is being
+   * dragged. One call per frame feeds both the preview and its measurements, so
+   * the numbers on screen and the numbers the checks read cannot disagree.
+   */
+  function previewWalls() {
+    if (grabbed) {
+      return grabbed.ortho ? orthogonalCorner(walls, grabbed.from, grabbed.to)
+        : moveCorner(walls, grabbed.from, grabbed.to);
+    }
+    if (draft && cursor) return addWall(walls, draft, cursor);
+    return null;
+  }
+
+  /** Every wall length and room area the preview would produce, rounded. */
+  function liveMeasure() {
+    const live = previewWalls();
+    if (!live) return null;
+    const rooms = planFromWalls(live).rooms;
+    return {
+      walls: live
+        .filter((wall) => Math.hypot(wall.x2 - wall.x1, wall.y2 - wall.y1) > 1e-6)
+        .map((wall) => Math.round(Math.hypot(wall.x2 - wall.x1, wall.y2 - wall.y1) * 1000) / 1000),
+      rooms: rooms.map((room) => ({
+        area: Math.round(room.area * 100) / 100,
+        at: polygonCentroid(room.polygon),
+      })),
+    };
+  }
+
   function draw() {
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
@@ -1115,9 +1221,10 @@ function editor(root) {
       ctx.fill();
     }
 
-    // A corner being dragged previews the walls it will produce, so the move is
-    // visible before it is committed.
-    const drawnWalls = grabbed ? moveCorner(walls, grabbed.from, grabbed.to) : walls;
+    // A corner or a wall being dragged previews the walls it would commit, so
+    // the move is visible before it is committed.
+    const preview = previewWalls();
+    const drawnWalls = preview ?? walls;
     const highlight = grabbed ? -1 : selected;
 
     // Walls at the studio's nominal thickness, so a 4 m wall looks 4 m long.
@@ -1143,6 +1250,27 @@ function editor(root) {
       ctx.fillRect(point.x - size, point.y - size, size * 2, size * 2);
     }
 
+    // Placed items: the rotated footprint they occupy, with the label.
+    for (const item of plan ? itemBoxes(plan) : []) {
+      const at = S(item.x, item.z);
+      const width = Math.max(item.width * viewport.scale, 2);
+      const depth = Math.max(item.depth * viewport.scale, 2);
+      ctx.save();
+      ctx.translate(at.x, at.y);
+      ctx.rotate(item.rotation || 0);
+      ctx.fillStyle = 'rgba(148,163,184,0.32)';
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 1;
+      ctx.fillRect(-width / 2, -depth / 2, width, depth);
+      ctx.strokeRect(-width / 2, -depth / 2, width, depth);
+      ctx.restore();
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '10px ui-monospace, SFMono-Regular, Menlo, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(item.label, at.x, at.y + 3);
+      ctx.textAlign = 'start';
+    }
+
     if (draft && cursor) {
       const a = S(draft.x, draft.z);
       const b = S(cursor.x, cursor.z);
@@ -1157,6 +1285,53 @@ function editor(root) {
       ctx.fillStyle = '#e2e8f0';
       ctx.font = '11px ui-monospace, SFMono-Regular, Menlo, monospace';
       ctx.fillText(`${f(Math.hypot(cursor.x - draft.x, cursor.z - draft.z), 2)} m`, b.x + 8, b.y - 8);
+    }
+
+    // Live measurements during a drag: each wall's length and each room's area,
+    // measured on the walls the drag would commit, each over a dark chip so the
+    // numbers read against the grid and the walls.
+    if (preview) {
+      const liveRooms = planFromWalls(preview).rooms;
+      for (const [index, room] of liveRooms.entries()) {
+        if (!Array.isArray(room.polygon) || room.polygon.length < 3) continue;
+        ctx.beginPath();
+        room.polygon.forEach(([x, z], at) => {
+          const point = S(x, z);
+          if (at === 0) ctx.moveTo(point.x, point.y); else ctx.lineTo(point.x, point.y);
+        });
+        ctx.closePath();
+        ctx.fillStyle = ['rgba(56,189,248,0.16)', 'rgba(74,222,128,0.16)', 'rgba(251,191,36,0.16)'][index % 3];
+        ctx.fill();
+      }
+
+      ctx.font = '10px ui-monospace, SFMono-Regular, Menlo, monospace';
+      const chip = (text, x, y, colour) => {
+        const width = ctx.measureText(text).width;
+        ctx.fillStyle = 'rgba(7,13,25,0.82)';
+        ctx.fillRect(x - width / 2 - 3, y - 9, width + 6, 13);
+        ctx.fillStyle = colour;
+        ctx.textAlign = 'center';
+        ctx.fillText(text, x, y + 1);
+        ctx.textAlign = 'start';
+      };
+
+      for (const wall of drawnWalls) {
+        const length = Math.hypot(wall.x2 - wall.x1, wall.y2 - wall.y1);
+        if (length < 1e-6) continue;
+        const a = S(wall.x1, wall.y1);
+        const b = S(wall.x2, wall.y2);
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const span = Math.hypot(dx, dy) || 1;
+        chip(`${f(length, 2)} m`, (a.x + b.x) / 2 - (dy / span) * 12,
+          (a.y + b.y) / 2 + (dx / span) * 12, '#e2e8f0');
+      }
+      for (const room of liveRooms) {
+        if (!Array.isArray(room.polygon) || room.polygon.length < 3) continue;
+        const [cx, cz] = polygonCentroid(room.polygon);
+        const at = S(cx, cz);
+        chip(`${f(room.area, 1)} m²`, at.x, at.y, '#4ade80');
+      }
     }
 
     if (selected >= 0 && walls[selected]) {
@@ -1198,6 +1373,89 @@ function editor(root) {
       : '<p class="hint">No rooms yet.</p>';
   }
 
+  /**
+   * The corner pair the segment buttons act on. Corners are listed by their
+   * position, so a pair stays recognisable after an edit reorders the walls.
+   */
+  function segmentControl() {
+    const from = root.querySelector('#ed-seg-from');
+    const to = root.querySelector('#ed-seg-to');
+    if (!from || !to) return;
+    const corners = planCorners(walls);
+    const keep = [from.value, to.value];
+    const options = corners.map((corner, index) =>
+      `<option value="${index}">${index + 1} · (${f(corner.x, 2)}, ${f(corner.z, 2)}) m</option>`).join('');
+    for (const [at, select] of [from, to].entries()) {
+      select.innerHTML = options;
+      select.disabled = corners.length < 2;
+      if (keep[at] !== '' && Number(keep[at]) < corners.length) select.value = keep[at];
+    }
+    if (from.value === '' && corners.length > 0) from.value = '0';
+    if (to.value === '' && corners.length > 1) to.value = '1';
+    const enough = corners.length > 1;
+    root.querySelector('#ed-connect').disabled = !enough;
+    root.querySelector('#ed-disconnect').disabled = !enough;
+  }
+
+  /** The two chosen corners, or null with the reason in the status line. */
+  function segmentPair() {
+    const corners = planCorners(walls);
+    const from = corners[Number(root.querySelector('#ed-seg-from').value)];
+    const to = corners[Number(root.querySelector('#ed-seg-to').value)];
+    if (!from || !to) { msg.textContent = 'pick two corners'; return null; }
+    if (Math.hypot(from.x - to.x, from.z - to.z) < 1e-6) {
+      msg.textContent = 'pick two different corners';
+      return null;
+    }
+    return { from, to };
+  }
+
+  function itemList() {
+    const host = root.querySelector('#ed-items');
+    const items = plan ? itemsSummary(plan) : [];
+    if (!items.length) {
+      host.innerHTML = '<p class="hint">No items placed.</p>';
+      return;
+    }
+    host.innerHTML = table(items.map((item) => [
+      item.label,
+      `${f(item.width, 2)} × ${f(item.depth, 2)} m · (${f(item.x, 2)}, ${f(item.z, 2)}) · lift ${f(item.elevation, 2)} m`,
+      `<button data-remove-item="${item.id}">remove</button>`,
+    ]));
+    host.querySelectorAll('[data-remove-item]').forEach((button) => {
+      button.onclick = () => applyPlan(removeItem(plan, button.dataset.removeItem), 'item removed');
+    });
+  }
+
+  const undoButton = root.querySelector('#ed-undo');
+  const redoButton = root.querySelector('#ed-redo');
+
+  /** Everything an undo has to put back: the walls and the plan they built. */
+  const snapshot = () => ({
+    walls: walls.map((wall) => ({ ...wall })),
+    plan: plan ? JSON.parse(JSON.stringify(plan)) : null,
+  });
+
+  function refresh(note = '') {
+    undoButton.disabled = !history.canUndo;
+    redoButton.disabled = !history.canRedo;
+    setStatus();
+    draw();
+    summary();
+    lists();
+    itemList();
+    segmentControl();
+    msg.textContent = note;
+  }
+
+  function applyPlan(next, note = '') {
+    history.record(snapshot());
+    plan = next;
+    state.data = next;
+    savePlan(next);
+    refresh(note);
+  }
+
   function applyWalls(next, note = '') {
     walls = next;
     selected = Math.min(selected, walls.length - 1);
@@ -1211,17 +1469,22 @@ function editor(root) {
     } else {
       clearPlan();
     }
-    setStatus();
-    draw();
-    summary();
-    lists();
-    msg.textContent = note;
+    refresh(note);
   }
 
+  /** A wall edit: remember the state it starts from, then apply it. */
   function commit(next, note) {
-    history.push(walls.map((wall) => ({ ...wall })));
-    if (history.length > 40) history.shift();
+    history.record(snapshot());
     applyWalls(next, note);
+  }
+
+  /** Put a snapshot back: the walls, the items, the saved plan and the screen. */
+  function restore(snap, note) {
+    walls = snap.walls.map((wall) => ({ ...wall }));
+    selected = -1;
+    plan = snap.plan;
+    if (plan) { state.data = plan; savePlan(plan); } else { clearPlan(); }
+    refresh(note);
   }
 
   const removeSelected = () => {
@@ -1231,10 +1494,42 @@ function editor(root) {
     commit(removeWall(walls, index), `wall ${index + 1} removed`);
   };
   root.querySelector('#ed-del').onclick = removeSelected;
-  root.querySelector('#ed-undo').onclick = () => {
-    const previous = history.pop();
+  undoButton.onclick = () => {
+    const previous = history.undo(snapshot());
     if (!previous) { msg.textContent = 'nothing to undo'; return; }
-    applyWalls(previous, 'undo');
+    restore(previous, 'undo');
+  };
+  redoButton.onclick = () => {
+    const next = history.redo(snapshot());
+    if (!next) { msg.textContent = 'nothing to redo'; return; }
+    restore(next, 'redo');
+  };
+  root.querySelector('#ed-connect').onclick = () => {
+    const pair = segmentPair();
+    if (!pair) return;
+    if (wallBetween(walls, pair.from, pair.to) >= 0) {
+      msg.textContent = 'a segment already joins those corners';
+      return;
+    }
+    commit(connectCorners(walls, pair.from, pair.to), 'segment added');
+  };
+  root.querySelector('#ed-disconnect').onclick = () => {
+    const pair = segmentPair();
+    if (!pair) return;
+    if (wallBetween(walls, pair.from, pair.to) < 0) {
+      msg.textContent = 'no segment between those corners';
+      return;
+    }
+    commit(disconnectCorners(walls, pair.from, pair.to), 'segment removed');
+  };
+  root.querySelector('#ed-add').onclick = () => {
+    if (!plan) { msg.textContent = 'draw or open a plan first'; return; }
+    const space = itemSpace(plan);
+    const placed = addItem(plan, root.querySelector('#ed-type').value, {
+      x: space.minX + space.width / 2,
+      z: space.minZ + space.depth / 2,
+    });
+    applyPlan(placed.plan, `${placed.label.toLowerCase()} placed`);
   };
 
   canvas.addEventListener('pointerdown', (event) => {
@@ -1260,6 +1555,9 @@ function editor(root) {
   canvas.addEventListener('pointermove', (event) => {
     if (down) travel = Math.max(travel, Math.hypot(event.clientX - down.x, event.clientY - down.y));
     if (grabbed) {
+      // Shift resizes orthogonally: the walls meeting the corner stay on their
+      // axes instead of one of them going on a slope.
+      grabbed.ortho = event.shiftKey;
       cursor = pointToPlan(event, grabbed.from);
       grabbed.to = { x: cursor.x, z: cursor.z };
       draw();
@@ -1274,12 +1572,14 @@ function editor(root) {
       const from = grabbed.from;
       const to = grabbed.to;
       const moved = travel > 3 || Math.hypot(to.x - from.x, to.z - from.z) > 0.01;
+      const ortho = Boolean(grabbed.ortho);
       grabbed = null;
       down = null;
       travel = 0;
       if (moved) {
         selected = -1;
-        commit(moveCorner(walls, from, to), 'corner moved');
+        commit(ortho ? orthogonalCorner(walls, from, to) : moveCorner(walls, from, to),
+          ortho ? 'corner resized · walls orthogonal' : 'corner moved');
       } else {
         draw();
       }
@@ -1311,21 +1611,43 @@ function editor(root) {
 
   const onKey = (event) => {
     if (!document.contains(canvas)) { window.removeEventListener('keydown', onKey); return; }
-    if (event.key !== 'Delete' && event.key !== 'Backspace') return;
-    if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
-    event.preventDefault();
-    removeSelected();
+    const active = document.activeElement;
+    // Typing in a field is never a shortcut: the guard CivilGPT's hook used.
+    if (['INPUT', 'SELECT', 'TEXTAREA'].includes(active?.tagName)
+      || active?.getAttribute('contenteditable') === 'true') return;
+    const command = event.ctrlKey || event.metaKey;
+    const key = event.key.toLowerCase();
+    if (command && key === 'z' && !event.shiftKey) {
+      event.preventDefault();
+      undoButton.click();
+      return;
+    }
+    if ((command && key === 'y') || (command && event.shiftKey && key === 'z')) {
+      event.preventDefault();
+      redoButton.click();
+      return;
+    }
+    if (event.key === 'Escape') {
+      if (selected < 0) return;
+      selected = -1;
+      draw();
+      lists();
+      msg.textContent = 'selection cleared';
+      return;
+    }
+    if (event.key === 'Delete' || event.key === 'Backspace') {
+      event.preventDefault();
+      removeSelected();
+    }
   };
   window.addEventListener('keydown', onKey);
   window.addEventListener('resize', draw);
 
   // Read-only hook for the headless checks, the way the 3D host exposes its
   // viewer: the probe needs the same fit the canvas is drawing with.
-  canvas.__editor = { view, corners: () => planCorners(walls) };
+  canvas.__editor = { view, corners: () => planCorners(walls), measure: liveMeasure };
 
-  draw();
-  summary();
-  lists();
+  refresh();
 }
 
 function appShell(root) {
@@ -1387,14 +1709,29 @@ function toolbox(root) {
 }
 
 const demo = (root) => {
-  root.innerHTML = `<h2>Demo</h2><p class="note">The whole pipeline on the bundled fixture, in four steps.</p>
+  root.innerHTML = `<h2>Demo</h2>
+    <p class="note">The whole pipeline on the bundled fixture, in four steps, plus the drawing set
+      this studio was ported from.</p>
     <ul class="plain">
       <li><a href="#/plan-studio">1. Upload</a> fixtures/floor_plan.png at 10 mm per pixel.</li>
       <li><a href="#/editor">2. Inspect</a> the walls the detector found and the rooms the graph closed.</li>
       <li><a href="#/framing-designer">3. Price</a> framing, then roof, stairs and the systems.</li>
       <li><a href="#/bid-builder">4. Bid</a> the takeoff at the rate book.</li>
     </ul>
-    <p class="hint">The two fixtures in fixtures/ are generated by examples/make_fixtures.rs and covered by the Rust tests.</p>`;
+    <p class="hint">The two small fixtures in fixtures/ are generated by examples/make_fixtures.rs and
+      covered by the Rust tests, so the four steps above run in a second.</p>
+    <h3>Southern Farmhouse drawing set</h3>
+    <p class="hint">${FARMHOUSE.pages.length} sheets ported from floorplan3d/southern-farmhouse and served
+      from static/demo/farmhouse: each one as the PNG the detector reads and the SVG it was exported
+      from. They are 2200 × 1700 drawings, so a sheet is a few hundred kilobytes and the thumbnails
+      load lazily. Detection here stays on the small fixtures: a sheet this dense runs past the
+      server's 120 s request budget.</p>
+    <div class="cards" id="farmhouse">${FARMHOUSE.pages.map((page) => `<div class="card">
+      <img class="thumb" src="${page.png}" alt="Southern Farmhouse sheet ${page.n}" loading="lazy" decoding="async">
+      <b>Sheet ${page.n}</b><span>${Math.round(page.pngBytes / 1024)} KB</span><br>
+      <a href="${page.png}" target="_blank" rel="noopener">PNG</a>${page.svg
+    ? ` · <a href="${page.svg}" target="_blank" rel="noopener">SVG</a>` : ''}
+    </div>`).join('')}</div>`;
 };
 
 function webgpuDemo(root) {
@@ -1660,6 +1997,109 @@ function permits(root) {
     + table(items.map(([name, detail]) => [name, detail, '']));
 }
 
+/**
+ * The printable report: what the extractor read, the takeoff quantities a
+ * builder orders from, the rooms, and the contract the engines price, on one
+ * sheet. The composition is CivilGPT's export — summary, metrics grid, notes,
+ * bill of quantities, grand total — written by the browser's print pipeline
+ * instead of jsPDF, because this studio has no build step to carry it.
+ */
+function report(root) {
+  const d = data();
+  root.innerHTML = `<h2>Report</h2>
+    <p class="note">One sheet from the plan: what was read, the quantities a builder orders from, the
+      rooms, and the contract the engines price. Print it, or save it as a PDF from the print dialog.</p>
+    <div class="row">
+      <button id="rp-print">Print / save as PDF</button>
+      <a class="btn" href="#" id="rp-json">Download plan JSON</a>
+      <span class="hint">Ctrl+P prints the same sheet; the studio navigation and these buttons are left out.</span>
+    </div>
+    <div id="rp-sheet"></div>`;
+  const host = root.querySelector('#rp-sheet');
+  if (!d) {
+    host.innerHTML = '<p class="hint">No plan yet — open <a href="#/plan-studio">Plan studio</a> and upload a drawing.</p>';
+    return;
+  }
+  const t = d.takeoff ?? {};
+  const totals = bidTotals(d, {});
+  const money = (value) => `$${Math.round(num(value)).toLocaleString('en-US')}`;
+  const source = d.source === 'pdf' ? 'PDF vectors'
+    : d.source === 'dxf' ? 'DXF import'
+      : d.source === 'geo' ? `${String(d.imported?.kind ?? 'kml').toUpperCase()} import`
+        : d.source === 'editor' ? 'drawn in the editor' : 'detected from the upload';
+  const markup = totals.bid?.config?.markup ?? {};
+  const rows = (list) => list.filter(([, value]) => value !== undefined && value !== null)
+    .map(([label, value, unit]) => `<tr><th>${esc(label)}</th><td>${value}</td><td>${esc(unit ?? '')}</td></tr>`).join('');
+  const takeoffRows = [
+    ['Wall length', f(t.wallLength), 'm'],
+    ['Wall area (gross)', t.wallGrossArea === undefined ? undefined : f(t.wallGrossArea), 'm²'],
+    ['Openings', t.doors === undefined && t.windows === undefined ? undefined
+      : `${t.doors ?? 0} door · ${t.windows ?? 0} window`,
+    t.openingArea === undefined ? '' : `${f(t.openingArea)} m²`],
+    ['Wall area (net)', t.wallNetArea !== undefined ? f(t.wallNetArea)
+      : (t.wallGrossArea === undefined ? undefined : f(t.wallGrossArea)), 'm²'],
+    ['Floor area', f(t.floorArea), 'm²'],
+    ['Volume', t.volume === undefined ? undefined : f(t.volume), 'm³'],
+    ['Drywall (2.4 × 1.2 m)', t.drywallSheets, 'sheets'],
+    ['Paint (2 coats)', t.paintLitres, 'L'],
+    ['Flooring (+10%)', t.flooringM2 === undefined ? undefined : f(t.flooringM2), 'm²'],
+    ['Baseboard', t.baseboardM === undefined ? undefined : f(t.baseboardM), 'm'],
+    ['Studs', t.studs, 'ea'],
+    ['Plates', t.platesM === undefined ? undefined : f(t.platesM), 'm'],
+    ['Sheathing', t.sheathingPanels, 'panels'],
+  ];
+  const costRows = [
+    ...totals.groups.map((group) => [group.label, money(group.subtotal), `${group.lines} lines`]),
+    ['Base of the work', money(totals.costs.base), ''],
+    ['Overhead', money(totals.costs.overhead), `${f(markup.overhead, 1)} %`],
+    ['Profit', money(totals.costs.profit), `${f(markup.profit, 1)} %`],
+    ['Contingency', money(totals.costs.contingency), `${f(markup.contingency, 1)} %`],
+    ['Permit', money(totals.costs.permit), ''],
+    ['Design fee', money(totals.costs.design), ''],
+    ['Pre-tax', money(totals.costs.preTax), ''],
+    ['Sales tax', money(totals.costs.tax), `${f(markup.tax, 1)} %`],
+    ['Total', money(totals.costs.total), ''],
+  ];
+  host.innerHTML = `<article class="report">
+    <header class="rp-head">
+      <div><b>Blueprint Studio</b><span>Construction &amp; design report</span></div>
+      <div class="rp-meta"><span>${esc(d.project || 'Plan')}</span>
+        <span>${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span></div>
+    </header>
+    <div class="rp-metrics">
+      <div><b>${d.walls.length}</b><span>walls</span></div>
+      <div><b>${d.rooms.length}</b><span>rooms</span></div>
+      <div><b>${f(t.floorArea, 1)}</b><span>m² floor</span></div>
+      <div><b>${money(totals.costs.total)}</b><span>contract</span></div>
+    </div>
+    <h3>1. Plan summary</h3>
+    <table class="rp-table" id="rp-summary"><tbody>${rows([
+      ['Source', esc(source), ''],
+      ['Scale', d.mmPerPx ? `${f(d.mmPerPx, 1)} ${d.source === 'pdf' ? 'mm/pt' : 'mm/px'}` : '—', ''],
+      ['Extents', `${f(d.widthM, 1)} × ${f(d.depthM, 1)}`, 'm'],
+      ['Wall height', f(d.wallHeight, 2), 'm'],
+      ['Stud spacing', num(d.studSpacingMm, 0), 'mm'],
+      ['Edits', d.edited ? 'walls edited since the upload' : 'as extracted', ''],
+    ])}</tbody></table>
+    <h3>2. Takeoff</h3>
+    <table class="rp-table" id="rp-takeoff"><tbody>${rows(takeoffRows)}</tbody></table>
+    <h3>3. Rooms</h3>
+    <table class="rp-table" id="rp-rooms"><thead><tr><th>Room</th><th>Area</th><th>Perimeter</th></tr></thead>
+      <tbody>${d.rooms.map((room) => `<tr><td>${esc(room.name || 'Room')}</td>
+        <td>${f(room.area, 2)} m²</td><td>${f(room.perimeter, 2)} m</td></tr>`).join('')}</tbody></table>
+    <h3>4. Priced work</h3>
+    <table class="rp-table" id="rp-costs"><tbody>${rows(costRows)}</tbody></table>
+    <p class="rp-foot">${t.stale
+    ? 'Areas and wall lengths are recomputed from the edited walls; the sheet quantities are from the upload the edit started from. '
+    : ''}Quantities are measured on the wall centre lines and priced by the engine price book, not a supplier quote.</p>
+  </article>`;
+  root.querySelector('#rp-print').onclick = () => window.print();
+  root.querySelector('#rp-json').onclick = (event) => {
+    event.preventDefault();
+    download(`${d.project || 'plan'}.json`, JSON.stringify(d.plan ?? d, null, 2));
+  };
+}
+
 const RATES = {
   framing: 62, sheathing: 18, drywall: 26, paint: 9, flooring: 55, roofing: 145, electrical: 48, plumbing: 58, stairs: 950, foundation: 190,
 };
@@ -1890,6 +2330,7 @@ const VIEWS = {
   'permits-inspections': permits,
   'code-rules': codeRules,
   'bid-builder': bidBuilder,
+  report,
   'price-book': priceBook,
   pricing,
   calc,

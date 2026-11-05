@@ -266,8 +266,11 @@ function bidGroups(plan, v = {}) {
   return groups;
 }
 
-/** A contract price from the suite totals, with the commercial structure. */
-export function bidResult(plan, v = {}) {
+/**
+ * The priced contract behind bidResult, as numbers: the report needs the
+ * amounts rather than the formatted rows a screen prints.
+ */
+export function bidTotals(plan, v = {}) {
   const groups = bidGroups(plan, v);
   const bid = buildBid({
     groups,
@@ -283,9 +286,20 @@ export function bidResult(plan, v = {}) {
     },
     depositPct: n(v.deposit, 30),
   });
-  const costs = bid.costs;
-  const checks = bidChecks(bid);
-  const floor = Math.max(n(plan?.takeoff?.floorArea, 1), 1);
+  return {
+    bid,
+    groups: bid.groups.map((group) => ({ label: group.label, subtotal: group.subtotal, lines: group.lines.length })),
+    costs: bid.costs,
+    counts: bid.counts,
+    schedule: bid.schedule,
+    checks: bidChecks(bid),
+    floor: Math.max(n(plan?.takeoff?.floorArea, 1), 1),
+  };
+}
+
+/** A contract price from the suite totals, with the commercial structure. */
+export function bidResult(plan, v = {}) {
+  const { bid, groups, costs, checks, floor } = bidTotals(plan, v);
   const itemized = bid.groups
     .flatMap((group) => group.lines.map((line) => ({ suite: group.label, label: line.description, total: line.total })))
     .sort((a, b) => b.total - a.total);
