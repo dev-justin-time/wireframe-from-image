@@ -1,2 +1,5 @@
 /target
 /outputs
+/.cdp
+/pdfium
+/pdfium.dll

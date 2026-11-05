@@ -147,10 +147,13 @@ pub fn detect_lines(img: &GrayImage, options: DetectOptions) -> Vec<Line> {
         }
     }
 
-    // Walk the ink along each candidate line to recover its real extent.
+    // Walk the ink along each candidate line to recover its real extent. One
+    // line can carry several walls: the pieces either side of a doorway vote
+    // into the same Hough bin, so every run has to be taken, not just the
+    // longest one, or the shorter piece of the wall disappears.
     let mut segments: Vec<Line> = reps
         .into_iter()
-        .filter_map(|(t, rho)| segment_from_polar(t, rho, w, h, &mask, &options))
+        .flat_map(|(t, rho)| segments_from_polar(t, rho, w, h, &mask, &options))
         .collect();
 
     // Snap before merging: a thick stroke yields several candidates a few degrees
@@ -158,7 +161,7 @@ pub fn detect_lines(img: &GrayImage, options: DetectOptions) -> Vec<Line> {
     // they describe. Merging first would let that drift past the snap tolerance.
     let snapped = snap_to_axes(segments.drain(..).collect(), w, h, &mask, &options);
 
-    let merged = merge_collinear(sort_by_length(snapped), &options);
+    let merged = merge_collinear(sort_by_length(snapped), &options, &mask, w, h);
     remove_redundant(merged, &options)
 }
 
@@ -216,9 +219,74 @@ fn otsu_threshold(gray: &GrayImage) -> u8 {
 }
 
 /// True where a pixel belongs to the drawing (dark ink).
-fn ink_mask(gray: &GrayImage) -> Vec<bool> {
+///
+/// Exposed because the plan builder reads the same ink: the symbols drawn inside
+/// an opening are pixels, and they are what tells a window from a door.
+pub fn ink_mask(gray: &GrayImage) -> Vec<bool> {
     let threshold = otsu_threshold(gray);
     gray.pixels().map(|p| p[0] <= threshold).collect()
+}
+
+/// How wide the ink stroke is where a segment lies, as `(lower quartile,
+/// widest)`. A wall is thick along its whole length, so a line that is thick at
+/// a few samples only — one crossing a wall on its way past — measures thin at
+/// the quartile, which is what a drawn line should measure; a wall that tapers
+/// to a hairline at one end is still thick at the other, which is what the
+/// maximum is for.
+pub fn stroke_width(mask: &[bool], width: usize, height: usize, line: &Line) -> (f32, f32) {
+    let (dx, dy) = unit(line);
+    if (dx == 0.0 && dy == 0.0) || width == 0 || height == 0 {
+        return (0.0, 0.0);
+    }
+    let length = line.length();
+    if length < 2.0 {
+        return (0.0, 0.0);
+    }
+    let (nx, ny) = (-dy, dx);
+    let reach = 6i32;
+    let at = |x: f32, y: f32| -> bool {
+        let (xi, yi) = (x.round() as i32, y.round() as i32);
+        xi >= 0
+            && yi >= 0
+            && (xi as usize) < width
+            && (yi as usize) < height
+            && mask[yi as usize * width + xi as usize]
+    };
+
+    let mut runs: Vec<f32> = Vec::with_capacity(12);
+    for step in 1..=12 {
+        let s = length * step as f32 / 13.0;
+        let (px, py) = (line.x1 + dx * s, line.y1 + dy * s);
+        let mut on_axis = 0.0f32;
+        let mut widest = 0.0f32;
+        let mut start: Option<i32> = None;
+        for o in -reach..=reach {
+            let ink = at(px + o as f32 * nx, py + o as f32 * ny);
+            if ink && start.is_none() {
+                start = Some(o);
+            }
+            if (!ink || o == reach) && start.is_some() {
+                let (lo, hi) = (start.take().unwrap_or(o), if ink { o } else { o - 1 });
+                let run = (hi - lo + 1) as f32;
+                // The run the segment sits on is the stroke it came from; a
+                // nearby wall face is only a fallback.
+                if lo <= 0 && hi >= 0 {
+                    on_axis = run;
+                    break;
+                }
+                widest = widest.max(run);
+            }
+        }
+        runs.push(if on_axis > 0.0 { on_axis } else { widest });
+    }
+
+    runs.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    (runs[runs.len() / 4], runs[runs.len() - 1])
+}
+
+/// The width a stroke holds along its length, at its lower quartile.
+pub fn stroke_thickness(mask: &[bool], width: usize, height: usize, line: &Line) -> f32 {
+    stroke_width(mask, width, height, line).0
 }
 
 /// Distance in degrees from the nearest horizontal, vertical or 45 degree axis.
@@ -281,15 +349,17 @@ fn peaks_collinear(
     angle_gap <= options.merge_angle_deg && (rho_a - rho_b).abs() <= options.merge_distance_px
 }
 
-/// Clamp-based extent of the ink belonging to a polar line.
-fn segment_from_polar(
+/// Clamp-based extents of the ink belonging to a polar line: one segment per
+/// run long enough to be a wall. A thin diaering into the same bin still only
+/// contributes its own run, so a stroke broken by an opening yields both pieces.
+fn segments_from_polar(
     theta: usize,
     rho: f32,
     w: usize,
     h: usize,
     mask: &[bool],
     options: &DetectOptions,
-) -> Option<Line> {
+) -> Vec<Line> {
     let rad = (theta as f32).to_radians();
     let (nx, ny) = (rad.cos(), rad.sin());
     let (tx, ty) = (-ny, nx);
@@ -308,23 +378,15 @@ fn segment_from_polar(
         s_max,
         options.merge_gap_px,
     );
-    let (s0, s1) = runs
-        .into_iter()
-        .max_by(|a, b| {
-            (a.1 - a.0)
-                .partial_cmp(&(b.1 - b.0))
-                .unwrap_or(std::cmp::Ordering::Equal)
-        })?;
-    if s1 - s0 < options.min_length {
-        return None;
-    }
-
-    Some(Line {
-        x1: ox + s0 * tx,
-        y1: oy + s0 * ty,
-        x2: ox + s1 * tx,
-        y2: oy + s1 * ty,
-    })
+    runs.into_iter()
+        .filter(|(s0, s1)| s1 - s0 >= options.min_length)
+        .map(|(s0, s1)| Line {
+            x1: ox + s0 * tx,
+            y1: oy + s0 * ty,
+            x2: ox + s1 * tx,
+            y2: oy + s1 * ty,
+        })
+        .collect()
 }
 
 /// Pull every segment that is close to an axis onto that axis, centred on the ink
@@ -601,13 +663,19 @@ fn distance_to_line(line: &Line, x: f32, y: f32) -> f32 {
 }
 
 /// Merge near-collinear segments whose extents overlap or nearly touch.
-fn merge_collinear(mut segments: Vec<Line>, options: &DetectOptions) -> Vec<Line> {
+fn merge_collinear(
+    mut segments: Vec<Line>,
+    options: &DetectOptions,
+    mask: &[bool],
+    w: usize,
+    h: usize,
+) -> Vec<Line> {
     let mut merged_any = true;
     while merged_any {
         merged_any = false;
         'restart: for i in 0..segments.len() {
             for j in (i + 1)..segments.len() {
-                if let Some(merged) = try_merge(segments[i], segments[j], options) {
+                if let Some(merged) = try_merge(segments[i], segments[j], options, mask, w, h) {
                     segments[i] = merged;
                     segments.remove(j);
                     merged_any = true;
@@ -668,8 +736,26 @@ fn covers(longer: &Line, segment: &Line, options: &DetectOptions) -> bool {
 
 /// Combine two segments into one spanning their full extent, if they lie on the
 /// same line and their spans overlap or are within `merge_gap_px`.
-fn try_merge(a: Line, b: Line, options: &DetectOptions) -> Option<Line> {
+fn try_merge(
+    a: Line,
+    b: Line,
+    options: &DetectOptions,
+    mask: &[bool],
+    w: usize,
+    h: usize,
+) -> Option<Line> {
     if angle_gap(angle_deg(&a), angle_deg(&b)) > options.merge_angle_deg {
+        return None;
+    }
+
+    // A hairline running along a wall — glazing across a window, a door leaf, a
+    // dimension line — is not part of the wall. Merging it would close the
+    // opening the wall leaves and the window would disappear into the wall.
+    let (ta, tb) = (
+        stroke_thickness(mask, w, h, &a),
+        stroke_thickness(mask, w, h, &b),
+    );
+    if ta.max(tb) > 2.0 * ta.min(tb) + 0.5 {
         return None;
     }
 
@@ -777,6 +863,35 @@ mod tests {
             lines.is_empty(),
             "specks shorter than min_length should be dropped: {lines:?}"
         );
+    }
+
+    #[test]
+    fn a_wall_broken_by_a_doorway_keeps_both_pieces() {
+        // Both pieces of the wall vote into the same Hough bin; keeping only the
+        // longest run lost the shorter piece, and with it the opening.
+        let mut img = canvas(260, 460);
+        for x in 96..102 {
+            stroke(&mut img, x, 40, x, 190);
+            stroke(&mut img, x, 290, x, 420);
+        }
+
+        let lines = detect_lines(&img, DetectOptions::default());
+        let vertical: Vec<_> = lines
+            .iter()
+            .filter(|l| (l.x1 - l.x2).abs() < 2.0 && l.x1 > 90.0 && l.x1 < 110.0)
+            .collect();
+        assert_eq!(vertical.len(), 2, "expected both pieces of the wall: {lines:#?}");
+        let (mut above, mut below) = (false, false);
+        for piece in &vertical {
+            let (top, bottom) = (piece.y1.min(piece.y2), piece.y1.max(piece.y2));
+            assert!(bottom < 210.0 || top > 270.0, "a piece spans the doorway: {piece:?}");
+            if bottom < 210.0 {
+                above = true;
+            } else {
+                below = true;
+            }
+        }
+        assert!(above && below, "{vertical:#?}");
     }
 
     #[test]
