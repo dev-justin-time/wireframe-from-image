@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <script src="../shared/error-reporting.js"></script>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stair designer · straight staircase</title>
+    <meta name="description" content="Design a straight staircase with the rise, run, headroom and stringer checks and a parts list.">
+    <link rel="canonical" href="https://dev-justin-time.github.io/floorplan_3d/pages/stair-designer.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Floorplan 3D">
+    <meta property="og:title" content="Stair designer · straight staircase">
+    <meta property="og:description" content="Design a straight staircase with the rise, run, headroom and stringer checks and a parts list.">
+    <meta property="og:url" content="https://dev-justin-time.github.io/floorplan_3d/pages/stair-designer.html">
+    <meta property="og:image" content="../assets/images/hero-plan-1.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Stair designer · straight staircase">
+    <meta name="twitter:description" content="Design a straight staircase with the rise, run, headroom and stringer checks and a parts list.">
+    <meta name="twitter:image" content="../assets/images/hero-plan-1.png">
+<link rel="stylesheet" href="../assets/tailwind.css">
+    <style>
+        html, body { margin: 0; height: 100%; overflow: hidden; background: #f8fafc; }
+        .field input[type="number"] { width: 5.5rem; }
+        input[type="range"] { accent-color: #0ea5e9; }
+        input[readonly] { background: #f1f5f9; color: #475569; }
+        canvas { display: block; }
+        .check-ok { color: #15803d; }
+        .check-warn { color: #b45309; }
+        .check-error { color: #dc2626; }
+        .check-info { color: #475569; }
+        #elevation { width: 100%; height: 100%; }
+        #stage { width: 100%; height: 100%; }
+        #stage canvas { display: block; width: 100% !important; height: 100% !important; }
+    </style>
+</head>
+<body class="h-full text-slate-800">
+    <div class="h-full flex flex-col">
+        <header class="flex items-center justify-between px-4 py-2 bg-white border-b border-slate-200">
+            <div class="flex items-baseline gap-3">
+                <h1 class="text-base font-bold">Stair designer</h1>
+                <span class="text-[11px] text-slate-500">Straight staircase · Blondel sizing, live elevation and 3D</span>
+            </div>
+            <div class="flex items-center gap-2 text-[11px] font-semibold">
+                <a href="Editor.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Editor</a>
+            <a href="framing-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Framing</a>
+                <a href="plumbing-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Plumbing</a>
+                <a href="landscape-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Landscape</a>
+            <a href="deck-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Deck</a>
+            <a href="electrical-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Electrical</a>
+            <a href="bid-builder.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Bid</a>
+                <a href="stair-parts.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Parts</a>
+                <a href="stair-gallery.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Models</a>
+                <a href="stair-glossary.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Glossary</a>
+                <button id="reset" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Reset</button>
+                <button id="add-to-plan" class="px-2 py-1 rounded bg-sky-600 text-white hover:bg-sky-700">Add to plan</button>
+            </div>
+        </header>
+
+        <main class="flex-1 min-h-0 flex">
+            <aside class="w-[360px] shrink-0 overflow-y-auto bg-white border-r border-slate-200 p-4 space-y-4">
+                <section>
+                    <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-2">Stair</h2>
+                    <div class="space-y-3">
+                        <label class="field block text-[11px] text-slate-500">
+                            <span class="flex justify-between"><span>Height</span><b id="height-label" class="text-slate-800">2700 mm</b></span>
+                            <div class="flex items-center gap-2 mt-0.5">
+                                <input type="range" id="height-range" min="1200" max="4500" step="10" value="2700" class="flex-1">
+                                <input type="number" id="height" min="1200" max="4500" step="10" value="2700" class="rounded border border-slate-200 px-1 py-0.5 font-mono text-[11px]">
+                            </div>
+                        </label>
+                        <label class="field block text-[11px] text-slate-500">
+                            <span class="flex justify-between"><span>Width</span><b id="width-label" class="text-slate-800">1000 mm</b></span>
+                            <div class="flex items-center gap-2 mt-0.5">
+                                <input type="range" id="width-range" min="600" max="1600" step="10" value="1000" class="flex-1">
+                                <input type="number" id="width" min="600" max="1600" step="10" value="1000" class="rounded border border-slate-200 px-1 py-0.5 font-mono text-[11px]">
+                            </div>
+                        </label>
+                        <label class="block text-[11px] text-slate-500">Solve by
+                            <select id="solve" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 text-[11px]">
+                                <option value="blondel">Blondel's law (630 mm)</option>
+                                <option value="length">Total length</option>
+                            </select>
+                        </label>
+                        <label class="field block text-[11px] text-slate-500">
+                            <span class="flex justify-between"><span id="blondel-label-caption">Blondel's law</span><b id="blondel-label" class="text-slate-800">630 mm</b></span>
+                            <div class="flex items-center gap-2 mt-0.5">
+                                <input type="range" id="blondel-target-range" min="590" max="650" step="1" value="630" class="flex-1">
+                                <input type="number" id="blondel-target" min="590" max="650" step="1" value="630" class="rounded border border-slate-200 px-1 py-0.5 font-mono text-[11px]">
+                            </div>
+                        </label>
+                        <label class="field block text-[11px] text-slate-500">
+                            <span class="flex justify-between"><span id="length-caption">Total run</span><b id="length-label" class="text-slate-800">—</b></span>
+                            <div class="flex items-center gap-2 mt-0.5">
+                                <input type="range" id="length-range" min="1500" max="9000" step="10" value="4200" class="flex-1">
+                                <input type="number" id="length" min="1500" max="9000" step="10" value="4200" class="rounded border border-slate-200 px-1 py-0.5 font-mono text-[11px]">
+                            </div>
+                        </label>
+                    </div>
+                </section>
+
+                <section>
+                    <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-2">Steps</h2>
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2 text-[11px]">
+                            <label class="flex items-center gap-1 text-slate-600">
+                                <input type="checkbox" id="auto-steps" checked> Auto steps
+                            </label>
+                            <input type="number" id="steps" min="2" max="30" step="1" value="14" disabled
+                                class="w-16 rounded border border-slate-200 px-1 py-0.5 font-mono text-[11px] disabled:opacity-50" title="Unlock Auto steps to pin the number of steps">
+                            <span class="text-slate-400">steps</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="field block text-[11px] text-slate-500">Landing step
+                                <input type="number" id="landing-step" min="0" max="300" step="5" value="50" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 font-mono text-[11px]" title="0 = no landing step">
+                            </label>
+                            <label class="field block text-[11px] text-slate-500">Overlap
+                                <input type="number" id="overlap" min="0" max="80" step="5" value="45" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 font-mono text-[11px]">
+                            </label>
+                        </div>
+                        <label class="field block text-[11px] text-slate-500">Step thickness
+                            <input type="number" id="step-thickness" min="20" max="140" step="5" value="40" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 font-mono text-[11px]">
+                        </label>
+                    </div>
+                </section>
+
+                <section>
+                    <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-2">Floor opening</h2>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="field block text-[11px] text-slate-500">Opening length
+                            <input type="number" id="opening-length" min="0" max="9000" step="50" value="3600" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 font-mono text-[11px]">
+                        </label>
+                        <label class="field block text-[11px] text-slate-500">Floor thickness
+                            <input type="number" id="floor-thickness" min="80" max="400" step="10" value="200" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 font-mono text-[11px]">
+                        </label>
+                        <label class="field block text-[11px] text-slate-500">Left offset
+                            <input type="number" id="left-offset" min="-500" max="500" step="10" value="0" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 font-mono text-[11px]">
+                        </label>
+                        <label class="field block text-[11px] text-slate-500">Right offset
+                            <input type="number" id="right-offset" min="-500" max="500" step="10" value="0" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 font-mono text-[11px]">
+                        </label>
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-2 leading-snug">Headroom is measured at the ceiling edge, tan(angle) × (opening − landing step) − floor thickness.</p>
+                </section>
+
+                <section class="rounded-lg border border-slate-200 p-3">
+                    <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-2">Result</h2>
+                    <div id="results" class="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] font-mono"></div>
+                    <div class="mt-2">
+                        <div class="flex justify-between text-[10px] text-slate-500"><span>Comfort</span><b id="comfort-label">—</b></div>
+                        <div class="h-1.5 rounded bg-slate-100 mt-1 overflow-hidden">
+                            <div id="comfort-bar" class="h-full w-0 bg-emerald-500 transition-all"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section>
+                    <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-1">Checks</h2>
+                    <ul id="checks" class="space-y-0.5 text-[11px] leading-snug"></ul>
+                </section>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="takeoff" class="px-2 py-1.5 rounded border border-slate-200 text-[11px] font-bold hover:bg-slate-50">Takeoff CSV</button>
+                    <button id="add-to-plan-2" class="px-2 py-1.5 rounded bg-slate-900 text-white text-[11px] font-bold hover:bg-slate-800">Add to plan</button>
+                </div>
+                <p id="status" class="text-[10px] text-sky-700 min-h-[1rem]"></p>
+                <p class="text-[10px] text-slate-400 leading-snug">Steps are treads: risers = steps + 1. Riser 150–200 mm, going 230–330 mm, slope 20–50° (ideal 30–35°), G + 2H 590–650 mm, headroom ≥ 1900 mm. Metric design aid; the placed stair is checked again against the IRC/IBC profile. <a href="stair-glossary.html" class="underline hover:text-sky-700">Glossary &amp; formulas</a>.</p>
+            </aside>
+
+            <div class="flex-1 min-w-0 flex flex-col">
+                <section class="flex-1 min-h-0 bg-white m-3 mb-0 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+                    <div class="flex items-center justify-between px-3 py-1.5 border-b border-slate-100">
+                        <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">Elevation</h2>
+                        <span class="text-[10px] text-slate-400">section through the flight</span>
+                    </div>
+                    <div class="flex-1 min-h-0 relative">
+                        <canvas id="elevation"></canvas>
+                    </div>
+                </section>
+                <section class="flex-1 min-h-0 bg-white m-3 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+                    <div class="flex items-center justify-between px-3 py-1.5 border-b border-slate-100">
+                        <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">3D</h2>
+                        <span class="text-[10px] text-slate-400">drag to orbit · scroll to zoom</span>
+                    </div>
+                    <div class="flex-1 min-h-0 relative">
+                        <div id="stage"></div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "/vendor/three/three.module.js",
+            "three/addons/": "/vendor/three/addons/",
+            "three/nodes": "/vendor/three/addons/nodes/Nodes.js",
+            "three-bvh-csg": "/vendor/three-bvh-csg/index.module.js",
+            "three-mesh-bvh": "/vendor/three-mesh-bvh/index.module.js"
+        }
+    }
+    </script>
+    <script type="module" src="../assets/page-scripts/stair-designer.js"></script>
+    <script type="module" src="../shared/site.js"></script>
+</body>
+</html>

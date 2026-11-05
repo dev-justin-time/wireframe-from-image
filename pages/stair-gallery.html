@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <script src="../shared/error-reporting.js"></script>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stair models · 3D gallery</title>
+    <meta name="description" content="3D models of the stair types the designer supports.">
+    <link rel="canonical" href="https://dev-justin-time.github.io/floorplan_3d/pages/stair-gallery.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Floorplan 3D">
+    <meta property="og:title" content="Stair models · 3D gallery">
+    <meta property="og:description" content="3D models of the stair types the designer supports.">
+    <meta property="og:url" content="https://dev-justin-time.github.io/floorplan_3d/pages/stair-gallery.html">
+    <meta property="og:image" content="../assets/images/hero-plan-1.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Stair models · 3D gallery">
+    <meta name="twitter:description" content="3D models of the stair types the designer supports.">
+    <meta name="twitter:image" content="../assets/images/hero-plan-1.png">
+<link rel="stylesheet" href="../assets/tailwind.css">
+    <style>
+        body { margin: 0; overflow: hidden; background: #0f172a; }
+        #stage { position: fixed; inset: 0; }
+        #panel { position: fixed; top: 0; left: 0; bottom: 0; width: 292px; overflow-y: auto; }
+        #info { position: fixed; right: 16px; bottom: 16px; width: 300px; }
+        .model-button.active { border-color: #38bdf8; background: rgba(56, 189, 248, 0.12); color: #e0f2fe; }
+        canvas { display: block; }
+    </style>
+</head>
+<body class="h-full text-slate-200">
+    <div id="stage"></div>
+
+    <aside id="panel" class="bg-slate-900/95 backdrop-blur border-r border-slate-700 p-4 text-sm">
+        <h1 class="text-lg font-bold text-white">Stair models</h1>
+        <p class="text-[11px] text-slate-400 mt-1">
+            All 12 parametric families at a 2.70 m storey, side by side. Click one to frame it and read its numbers.
+        </p>
+        <div class="mt-3 flex gap-2">
+            <button id="fit-all" class="flex-1 rounded bg-sky-500/20 border border-sky-400/40 px-2 py-1 text-[11px] font-bold text-sky-200 hover:bg-sky-500/30">Frame all</button>
+            <button id="toggle-labels" class="flex-1 rounded bg-slate-800 border border-slate-600 px-2 py-1 text-[11px] font-bold text-slate-300 hover:border-slate-500">Labels on</button>
+        </div>
+        <div id="model-list" class="mt-4 space-y-4"></div>
+        <p class="mt-2 text-[10px]"><a href="stair-glossary.html" class="underline text-sky-300 hover:text-sky-200">Glossary &amp; formulas</a></p>
+        <p class="mt-6 text-[10px] text-slate-500 leading-snug">
+            Generated from <span class="font-mono text-slate-400">features/stairs/models.js</span>: same design engine, code checks and takeoff as the editor. Not a substitute for the manufacturer's engineering.
+        </p>
+    </aside>
+
+    <div id="info" class="rounded-xl bg-slate-900/95 backdrop-blur border border-slate-700 p-4">
+        <h2 id="info-title" class="text-sm font-bold text-white">12 stair models</h2>
+        <p id="info-meta" class="text-[11px] text-slate-400 mt-0.5">Click a model in the scene or the list to frame it.</p>
+        <p id="info-size" class="text-[11px] font-mono text-sky-300 mt-2 hidden"></p>
+        <p id="info-code" class="text-[10px] font-mono text-slate-500 mt-1 hidden"></p>
+        <p id="info-checks" class="text-[10px] font-mono mt-1 hidden"></p>
+        <p id="info-summary" class="text-[11px] text-slate-400 mt-2 leading-snug hidden"></p>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "/vendor/three/three.module.js",
+            "three/addons/": "/vendor/three/addons/",
+            "three/nodes": "/vendor/three/addons/nodes/Nodes.js",
+            "three-bvh-csg": "/vendor/three-bvh-csg/index.module.js",
+            "three-mesh-bvh": "/vendor/three-mesh-bvh/index.module.js"
+        }
+    }
+    </script>
+    <script type="module" src="../assets/page-scripts/stair-gallery.js"></script>
+    <script type="module" src="../shared/site.js"></script>
+</body>
+</html>

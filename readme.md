@@ -167,7 +167,7 @@ snapping to the pieces of the same run through the ported snap helpers. The plan
 is the source of truth, so a drag saves and rebuilds; the editor lists what is
 placed with its footprint and lift.
 
-The `Report` screen puts the same plan on one printable sheet: the summary and extents, the takeoff quantities, the rooms and the contract the bid engine prices. Its print stylesheet drops the navigation and the buttons, so the print button — or Ctrl+P — saves it as a PDF with no dependency behind it.
+The `Report` screen puts the same plan on one sheet: the summary and extents, the takeoff quantities, the rooms and the contract the bid engine prices. `Download PDF` writes that sheet as an A4 file in the browser — `static/pdf.js` is a small writer for text, rules and boxes, so there is no jsPDF, no build step and no print dialog — and `static/report-data.js` is the model both the sheet and the file read, so the numbers cannot drift apart. The page's print stylesheet still applies if the page itself is printed. The same print rules serve every other screen: a bid line or a code rule is one record, so a table paginates between rows rather than through one, and a heading never leaves its table overleaf.
 
 `2D scene` carries the services sheets on a second
 canvas — framing, the plumbing water/DWV/gas routes and the panel's circuits —

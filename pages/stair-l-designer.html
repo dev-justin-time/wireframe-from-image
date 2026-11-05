@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <script src="../shared/error-reporting.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L stair designer · quarter-turn stair</title>
+    <meta name="description" content="Design an L-shaped quarter-turn stair: winders on the walkline, inside-tread check, plan preview, 3D and takeoff.">
+    <link rel="canonical" href="https://dev-justin-time.github.io/floorplan_3d/pages/stair-l-designer.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Floorplan 3D">
+    <meta property="og:title" content="L stair designer · quarter-turn stair">
+    <meta property="og:description" content="Design an L-shaped quarter-turn stair: winders on the walkline, inside-tread check, plan preview, 3D and takeoff.">
+    <meta property="og:url" content="https://dev-justin-time.github.io/floorplan_3d/pages/stair-l-designer.html">
+    <meta property="og:image" content="../assets/images/hero-plan-1.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="L stair designer · quarter-turn stair">
+    <meta name="twitter:description" content="Design an L-shaped quarter-turn stair: winders on the walkline, inside-tread check, plan preview, 3D and takeoff.">
+    <meta name="twitter:image" content="../assets/images/hero-plan-1.png">
+<link rel="stylesheet" href="../assets/tailwind.css">
+    <style>
+        html, body { margin: 0; height: 100%; overflow: hidden; background: #f8fafc; }
+        canvas { display: block; }
+        .check-ok { color: #15803d; } .check-warn { color: #b45309; }
+        .check-error { color: #dc2626; } .check-info { color: #475569; }
+        #plan, #stage canvas { width: 100% !important; height: 100% !important; }
+        #plan { width: 100%; height: 100%; } #stage { width: 100%; height: 100%; }
+        code.f { font-family: ui-monospace, monospace; background: #f1f5f9; padding: 0 4px; border-radius: 4px; }
+    </style>
+</head>
+<body class="h-full text-slate-800">
+<div class="h-full flex flex-col">
+    <header class="flex items-center justify-between px-4 py-2 bg-white border-b border-slate-200">
+        <div class="flex items-baseline gap-3">
+            <h1 class="text-base font-bold">L stair designer</h1>
+            <span class="text-[11px] text-slate-500">Quarter-turn · 90° winders · plan + 3D</span>
+        </div>
+        <div class="flex items-center gap-2 text-[11px] font-semibold">
+            <a href="stair-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Straight</a>
+            <a href="stair-u-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">U</a>
+            <a href="stair-spiral-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Spiral</a>
+            <a href="stair-steep-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Steep</a>
+            <a href="Editor.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Editor</a>
+            <a href="stair-glossary.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Glossary</a>
+            <button id="add-to-plan" class="px-2 py-1 rounded bg-sky-600 text-white hover:bg-sky-700">Add to plan</button>
+        </div>
+    </header>
+    <main class="flex-1 min-h-0 flex">
+        <aside class="w-[360px] shrink-0 overflow-y-auto bg-white border-r border-slate-200 p-4 space-y-4">
+            <section>
+                <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-2">Quarter turn · 90°</h2>
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="block text-[11px] text-slate-500">Storey height (mm)<input id="in-height" type="number" min="1200" max="4500" step="10" value="2700" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]"></label>
+                    <label class="block text-[11px] text-slate-500">Width (mm)<input id="in-width" type="number" min="600" max="2000" step="10" value="1000" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]"></label>
+                    <label class="block text-[11px] text-slate-500">Run avail. (m)<input id="in-run" type="number" min="1" max="12" step="0.1" value="5.6" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]"></label>
+                    <label class="block text-[11px] text-slate-500">Depth avail. (m)<input id="in-depth" type="number" min="1" max="12" step="0.1" value="3.6" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]"></label>
+                    <label class="block text-[11px] text-slate-500 col-span-2">Code<select id="in-code" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 text-[11px]"></select></label>
+                </div>
+            </section>
+            <section class="rounded-lg border border-slate-200 p-3">
+                <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-2">Result</h2>
+                <div id="results" class="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] font-mono"></div>
+            </section>
+            <section>
+                <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-1">Checks</h2>
+                <ul id="checks" class="space-y-0.5 text-[11px] leading-snug"></ul>
+            </section>
+            <section class="rounded-lg border border-sky-200 bg-sky-50/60 p-3">
+                <h2 class="text-[11px] uppercase tracking-wider font-bold text-sky-800 mb-1">Formulas · quarter turn</h2>
+                <ol class="text-[11px] text-slate-600 space-y-1.5 leading-snug list-decimal pl-4">
+                    <li>Risers <code class="f">ceil(rise ÷ maxRiser)</code>, step height <code class="f">h = rise ÷ risers</code>, treads <code class="f">risers − 1</code>.</li>
+                    <li>Walkline radius <code class="f">Rw = innerR + 12 in</code> (code walkline offset from the narrow side).</li>
+                    <li>Angle per winder <code class="f">α = (π/2) ÷ treads</code>; walkline tread <code class="f">Tw = Rw × α</code> must clear the winder minimum (10 in IRC / 11 in IBC).</li>
+                    <li>Inside tread <code class="f">Ti = innerR × α</code> must clear 6 in (IRC) / 10 in (IBC) — widen the turn when this fails.</li>
+                    <li>Comfort <code class="f">2h + Tw → 24–25 in</code>; footprint is the swept annular sector, not the run × depth rectangle.</li>
+                </ol>
+            </section>
+            <div class="grid grid-cols-2 gap-2">
+                <button id="takeoff" class="px-2 py-1.5 rounded border border-slate-200 text-[11px] font-bold hover:bg-slate-50">Takeoff CSV</button>
+                <button id="add-to-plan-2" class="px-2 py-1.5 rounded bg-slate-900 text-white text-[11px] font-bold hover:bg-slate-800">Add to plan</button>
+            </div>
+            <p id="status" class="text-[10px] text-sky-700 min-h-[1rem]"></p>
+        </aside>
+        <div class="flex-1 min-w-0 flex flex-col">
+            <section class="flex-1 min-h-0 bg-white m-3 mb-0 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+                <div class="flex items-center justify-between px-3 py-1.5 border-b border-slate-100">
+                    <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">Plan · top view with winders + walkline</h2>
+                    <span class="text-[10px] text-slate-400">same symbol the editor places</span>
+                </div>
+                <div class="flex-1 min-h-0 relative"><canvas id="plan"></canvas></div>
+            </section>
+            <section class="flex-1 min-h-0 bg-white m-3 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+                <div class="flex items-center justify-between px-3 py-1.5 border-b border-slate-100">
+                    <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">3D</h2>
+                    <span class="text-[10px] text-slate-400">drag to orbit · scroll to zoom</span>
+                </div>
+                <div class="flex-1 min-h-0 relative"><div id="stage" class="absolute inset-0"></div></div>
+            </section>
+        </div>
+    </main>
+</div>
+<script type="importmap">{"imports":{"three":"/vendor/three/three.module.js","three/addons/":"/vendor/three/addons/"}}</script>
+<script type="module" src="../assets/page-scripts/stair-l-designer.js"></script>
+<script type="module" src="../shared/site.js"></script>
+</body>
+</html>

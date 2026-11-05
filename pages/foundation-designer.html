@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <script src="../shared/error-reporting.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Foundation · footings, slab and foundation walls</title>
+    <meta property="og:url" content="https://dev-justin-time.github.io/floorplan_3d/pages/foundation-designer.html">
+    <meta name="description" content="Size strip and pad footings, slab thickness and foundation walls from the floorplan footprint, with a concrete and rebar takeoff.">
+    <link rel="canonical" href="https://dev-justin-time.github.io/floorplan_3d/pages/foundation-designer.html">
+<link rel="stylesheet" href="../assets/tailwind.css">
+    <style>
+        html, body { margin: 0; min-height: 100%; background: #f8fafc; }
+        body { font-family: ui-sans-serif, system-ui, sans-serif; }
+        #footing-canvas { width: 100%; height: 100%; display: block; }
+        .metric-value { font-variant-numeric: tabular-nums; }
+    </style>
+</head>
+<body class="min-h-full text-slate-800">
+<div class="min-h-screen flex flex-col">
+    <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-2.5">
+            <div class="flex min-w-0 items-baseline gap-3">
+                <h1 class="text-base font-bold whitespace-nowrap">Foundation</h1>
+                <span class="truncate text-[11px] text-slate-500">Footings · slab · foundation walls · concrete + rebar</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-[11px] font-semibold">
+                <a href="Editor.html" class="rounded border border-slate-200 px-2 py-1 hover:bg-slate-50">Editor</a>
+                <a href="framing-designer.html" class="rounded border border-slate-200 px-2 py-1 hover:bg-slate-50">Framing</a>
+                <a href="plumbing-designer.html" class="rounded border border-slate-200 px-2 py-1 hover:bg-slate-50">Plumbing</a>
+                <a href="permits-inspections.html" class="rounded border border-slate-200 px-2 py-1 hover:bg-slate-50">Permits</a>
+                <a href="bid-builder.html" class="rounded border border-slate-200 px-2 py-1 hover:bg-slate-50">Bid</a>
+                <button id="reset" class="rounded border border-slate-200 px-2 py-1 hover:bg-slate-50">Reset</button>
+                <button id="export-csv" class="rounded bg-slate-900 px-2.5 py-1 text-white hover:bg-slate-700">Takeoff CSV</button>
+            </div>
+        </div>
+    </header>
+    <main class="mx-auto w-full max-w-7xl flex-1 px-4 py-4 grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-3">
+        <aside class="space-y-3">
+            <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">Footprint (from floorplan)</h2>
+                <div class="grid grid-cols-2 gap-2 mt-2">
+                    <label class="block text-[11px] text-slate-500">Width (m)<input id="f-width" type="number" min="3" max="40" step="0.1" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]"></label>
+                    <label class="block text-[11px] text-slate-500">Depth (m)<input id="f-depth" type="number" min="3" max="40" step="0.1" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]"></label>
+                    <label class="block text-[11px] text-slate-500">Storeys<input id="f-storeys" type="number" min="1" max="4" step="1" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]"></label>
+                    <label class="block text-[11px] text-slate-500">Soil (kPa)<select id="f-soil" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 text-[11px]"><option value="100">Soft clay · 100</option><option value="150" selected>Firm clay · 150</option><option value="200">Sand/gravel · 200</option><option value="300">Dense gravel · 300</option></select></label>
+                </div>
+                <button id="from-plan" class="mt-2 w-full rounded border border-slate-200 px-2 py-1.5 text-[11px] font-bold hover:bg-slate-50">Read footprint from Editor plan</button>
+            </section>
+            <section id="panel-footings" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">Footings</h2>
+                <div class="grid grid-cols-2 gap-2 mt-2">
+                    <label class="block text-[11px] text-slate-500">Type<select id="f-type" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 text-[11px]"><option value="strip">Strip + pads</option><option value="raft">Raft slab</option><option value="pier">Piers + grade beam</option></select></label>
+                    <label class="block text-[11px] text-slate-500">Strip width (mm)<input id="f-strip" type="number" min="300" max="1200" step="25" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]"></label>
+                    <label class="block text-[11px] text-slate-500">Strip depth (mm)<input id="f-depthmm" type="number" min="200" max="900" step="25" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]"></label>
+                    <label class="block text-[11px] text-slate-500">Frost depth (mm)<input id="f-frost" type="number" min="0" max="1500" step="50" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]"></label>
+                </div>
+            </section>
+            <section id="panel-slab" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">Slab + walls</h2>
+                <div class="grid grid-cols-2 gap-2 mt-2">
+                    <label class="block text-[11px] text-slate-500">Slab (mm)<input id="f-slab" type="number" min="75" max="250" step="5" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]"></label>
+                    <label class="block text-[11px] text-slate-500">Found. wall h (m)<input id="f-wallh" type="number" min="0" max="3" step="0.1" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]"></label>
+                    <label class="block text-[11px] text-slate-500">Rebar<select id="f-rebar" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 text-[11px]"><option value="mesh">Mesh + 2×bar</option><option value="grid">12mm grid 200</option><option value="heavy">16mm grid 150</option></select></label>
+                    <label class="block text-[11px] text-slate-500">Concrete $/m³<input id="f-rate" type="number" min="50" max="600" step="5" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]"></label>
+                </div>
+            </section>
+            <section id="panel-takeoff" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">Result</h2>
+                <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] font-mono mt-2">
+                    <span class="text-slate-500">Perimeter</span><b id="m-perim" class="text-right metric-value">—</b>
+                    <span class="text-slate-500">Strip concrete</span><b id="m-strip" class="text-right metric-value">—</b>
+                    <span class="text-slate-500">Slab concrete</span><b id="m-slab" class="text-right metric-value">—</b>
+                    <span class="text-slate-500">Wall concrete</span><b id="m-wall" class="text-right metric-value">—</b>
+                    <span class="text-slate-500">Total concrete</span><b id="m-total" class="text-right metric-value">—</b>
+                    <span class="text-slate-500">Rebar</span><b id="m-rebar" class="text-right metric-value">—</b>
+                    <span class="text-slate-500">Bearing check</span><b id="m-bearing" class="text-right metric-value">—</b>
+                </div>
+                <p class="mt-2 text-right text-xl font-mono font-bold" id="m-cost">—</p>
+                <p id="status" class="text-[10px] text-slate-400 mt-1"></p>
+            </section>
+        </aside>
+        <div class="space-y-3">
+            <section class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                <div class="px-4 py-2 border-b border-slate-100 flex items-center justify-between">
+                    <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">Footing section + slab plan</h2>
+                    <span class="text-[10px] font-mono text-slate-400">strip · wall · slab · rebar</span>
+                </div>
+                <div class="h-[420px] relative"><canvas id="footing-canvas"></canvas></div>
+                <p class="px-4 py-2 text-[10px] text-slate-500 border-t border-slate-100">Section (left) is to scale; plan (right) shows strips, pads and slab mesh. Bearing assumes 12 kN/m per storey + roof.</p>
+            </section>
+            <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">Why this page exists</h2>
+                <p class="text-[11px] text-slate-600 mt-1">No suite covered what the house sits on. Foundation closes the gap between floorplan and framing: footing widths from soil capacity, frost cover, slab and wall concrete, and a rebar allowance that flows into the bid via the price book.</p>
+                <div id="related-pricing" class="mt-2 flex gap-2 flex-wrap"></div>
+            </section>
+        </div>
+    </main>
+</div>
+<script type="module" src="../assets/page-scripts/foundation-designer.js"></script>
+    <script type="module" src="../shared/site.js"></script>
+</body>
+</html>

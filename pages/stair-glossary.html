@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <script src="../shared/error-reporting.js"></script>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stair glossary &amp; formulas</title>
+    <meta name="description" content="Stair terms and the formulas behind the rise, run, headroom and stringer checks.">
+    <link rel="canonical" href="https://dev-justin-time.github.io/floorplan_3d/pages/stair-glossary.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Floorplan 3D">
+    <meta property="og:title" content="Stair glossary &amp; formulas">
+    <meta property="og:description" content="Stair terms and the formulas behind the rise, run, headroom and stringer checks.">
+    <meta property="og:url" content="https://dev-justin-time.github.io/floorplan_3d/pages/stair-glossary.html">
+    <meta property="og:image" content="../assets/images/hero-plan-1.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Stair glossary &amp; formulas">
+    <meta name="twitter:description" content="Stair terms and the formulas behind the rise, run, headroom and stringer checks.">
+    <meta name="twitter:image" content="../assets/images/hero-plan-1.png">
+<link rel="stylesheet" href="../assets/tailwind.css">
+    <style>
+        html { scroll-behavior: smooth; }
+        body { background: #f8fafc; }
+        .term-card[hidden] { display: none; }
+        table.num td, table.num th { font-variant-numeric: tabular-nums; }
+        @media print {
+            header, nav, .no-print { display: none !important; }
+            main { display: block !important; }
+        }
+    </style>
+</head>
+<body class="min-h-full text-slate-800">
+    <header class="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-slate-200">
+        <div class="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between gap-3">
+            <div class="flex items-baseline gap-3 min-w-0">
+                <h1 class="text-base font-bold truncate">Stair glossary &amp; formulas</h1>
+                <span class="text-[11px] text-slate-500 hidden sm:inline">Terms, sizing method and a worked example</span>
+            </div>
+            <div class="flex items-center gap-2 text-[11px] font-semibold shrink-0">
+                <a href="stair-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Designer</a>
+                <a href="stair-gallery.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Models</a>
+                <a href="stair-parts.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Parts</a>
+                <a href="Editor.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Editor</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-6xl mx-auto px-4 py-6 flex gap-8">
+        <nav class="hidden lg:block w-44 shrink-0 no-print">
+            <div class="sticky top-16 text-[11px]">
+                <p class="uppercase tracking-wider font-bold text-slate-400 mb-2">On this page</p>
+                <a href="#glossary" class="block py-1 text-slate-600 hover:text-sky-700">Glossary</a>
+                <a href="#formulas" class="block py-1 text-slate-600 hover:text-sky-700">Formulas</a>
+                <a href="#worked" class="block py-1 text-slate-600 hover:text-sky-700">Worked example</a>
+                <a href="#adjustments" class="block py-1 text-slate-600 hover:text-sky-700">Adjustments</a>
+                <a href="#angles" class="block py-1 text-slate-600 hover:text-sky-700">Angle bands</a>
+                <p class="mt-4 text-[10px] text-slate-400 leading-snug">Metric design aid. The live calculator is the <a href="stair-designer.html" class="underline hover:text-sky-700">straight stair designer</a>; code references are in <span class="font-mono">staircode.md</span>.</p>
+            </div>
+        </nav>
+
+        <main class="flex-1 min-w-0 space-y-10">
+            <section class="max-w-3xl">
+                <h2 class="text-xl font-bold text-slate-900">Build a stair you can climb comfortably</h2>
+                <p class="text-sm text-slate-600 mt-2 leading-relaxed">
+                    The vocabulary, the ten formulas and the worked example below follow the method behind the
+                    straight stair designer and the editor's stair engine. Everything is metric; the imperial
+                    equivalents are the published US ranges.
+                </p>
+                <p class="text-[11px] text-slate-500 mt-2">
+                    Governing comfort rules: G + 2H 590–650 mm · going 230–330 mm · step height 150–200 mm ·
+                    slope 20–50° · headroom ≥ 1900 mm · width &gt; 700 mm.
+                </p>
+            </section>
+
+            <section id="glossary" class="scroll-mt-16">
+                <div class="flex items-end justify-between gap-4 flex-wrap">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">Glossary</h2>
+                        <p class="text-[11px] text-slate-500 mt-0.5">Every term used by the designer, plan and takeoff.</p>
+                    </div>
+                    <label class="text-[11px] text-slate-500 no-print">
+                        <span class="sr-only">Filter the glossary</span>
+                        <input id="glossary-search" type="search" placeholder="Filter terms…"
+                            class="w-56 rounded border border-slate-300 px-2 py-1 text-[12px] focus:outline-none focus:ring-1 focus:ring-sky-500">
+                    </label>
+                </div>
+                <p id="glossary-count" class="text-[10px] font-mono text-slate-400 mt-1"></p>
+                <div id="glossary-grid" class="grid sm:grid-cols-2 gap-3 mt-3"></div>
+                <p id="glossary-empty" class="hidden text-sm text-slate-500 mt-3">No term matches that filter.</p>
+            </section>
+
+            <section id="formulas" class="scroll-mt-16">
+                <h2 class="text-lg font-bold text-slate-900">Formulas</h2>
+                <p class="text-[11px] text-slate-500 mt-0.5">
+                    H = height · h = step height · G = going · B = Blondel value · θ = angle · d = step depth.
+                    The example column uses the 3000 mm worked example below.
+                </p>
+                <div class="mt-3 rounded-xl border border-slate-200 bg-white overflow-hidden">
+                    <div class="hidden sm:grid grid-cols-[1.1fr_1.4fr_1fr] gap-3 px-4 py-2 bg-slate-50 border-b border-slate-200 text-[10px] uppercase tracking-wider font-bold text-slate-500">
+                        <span>Quantity</span><span>Formula</span><span>Example</span>
+                    </div>
+                    <div id="formula-list" class="divide-y divide-slate-100"></div>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-2 leading-relaxed">
+                    Ranges: step height 150–200 mm (ideal 175), going 230–330 mm (ideal 280), Blondel 590–650 mm
+                    (ideal 630), slope 20–50° (ideal 30–35°), headroom ≥ 1900 mm (ideal ≥ 2100), width &gt; 700 mm
+                    (ideal ≥ 800). When the space is fixed, solve by length instead: <span class="font-mono">G = (L − landing step) ÷ steps</span>.
+                </p>
+            </section>
+
+            <section id="worked" class="scroll-mt-16">
+                <h2 class="text-lg font-bold text-slate-900">Worked example</h2>
+                <p class="text-[11px] text-slate-500 mt-0.5">A 3000 mm floor-to-floor rise with a 3500 mm floor opening.</p>
+
+                <div class="grid lg:grid-cols-[280px_1fr] gap-4 mt-3">
+                    <div class="rounded-xl border border-slate-200 bg-white p-4">
+                        <h3 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">Given</h3>
+                        <dl class="mt-2 space-y-1.5 text-[12px]">
+                            <div class="flex justify-between gap-3"><dt class="text-slate-500">Height</dt><dd class="font-mono">3000 mm</dd></div>
+                            <div class="flex justify-between gap-3"><dt class="text-slate-500">Floor opening</dt><dd class="font-mono">3500 mm</dd></div>
+                            <div class="flex justify-between gap-3"><dt class="text-slate-500">Opening thickness</dt><dd class="font-mono">250 mm</dd></div>
+                            <div class="flex justify-between gap-3"><dt class="text-slate-500">Blondel target</dt><dd class="font-mono">630 mm</dd></div>
+                            <div class="flex justify-between gap-3"><dt class="text-slate-500">Landing step</dt><dd class="font-mono">50 mm</dd></div>
+                        </dl>
+                        <h3 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mt-4">Results</h3>
+                        <dl class="mt-2 space-y-1.5 text-[12px]">
+                            <div class="flex justify-between gap-3"><dt class="text-slate-500">Steps / risers</dt><dd class="font-mono">16 / 17</dd></div>
+                            <div class="flex justify-between gap-3"><dt class="text-slate-500">Step height</dt><dd class="font-mono">176.47 mm</dd></div>
+                            <div class="flex justify-between gap-3"><dt class="text-slate-500">Going</dt><dd class="font-mono">277.06 mm</dd></div>
+                            <div class="flex justify-between gap-3"><dt class="text-slate-500">Step depth</dt><dd class="font-mono">320 mm</dd></div>
+                            <div class="flex justify-between gap-3"><dt class="text-slate-500">Overlap</dt><dd class="font-mono">42.94 mm</dd></div>
+                            <div class="flex justify-between gap-3"><dt class="text-slate-500">Angle</dt><dd class="font-mono">32.49°</dd></div>
+                            <div class="flex justify-between gap-3"><dt class="text-slate-500">Total run</dt><dd class="font-mono">4482.96 mm</dd></div>
+                            <div class="flex justify-between gap-3"><dt class="text-slate-500">Headroom</dt><dd class="font-mono text-emerald-700">1947.45 mm</dd></div>
+                        </dl>
+                    </div>
+
+                    <ol class="rounded-xl border border-slate-200 bg-white p-4 space-y-3 text-[12px] leading-relaxed">
+                        <li>
+                            <b class="text-slate-900">1 · Number of steps.</b>
+                            <span class="text-slate-600">Divide the height by the ideal 175 mm step height, round, then subtract one.</span>
+                            <code class="block mt-1 font-mono text-[11px] text-sky-800 bg-sky-50 rounded px-2 py-1">steps = round(3000 ÷ 175) − 1 = round(17.14) − 1 = <b>16</b> · risers = <b>17</b></code>
+                        </li>
+                        <li>
+                            <b class="text-slate-900">2 · Step height.</b>
+                            <span class="text-slate-600">Divide the height by the number of risers.</span>
+                            <code class="block mt-1 font-mono text-[11px] text-sky-800 bg-sky-50 rounded px-2 py-1">h = 3000 ÷ (16 + 1) = 3000 ÷ 17 = <b>176.47 mm</b></code>
+                        </li>
+                        <li>
+                            <b class="text-slate-900">3 · Going.</b>
+                            <span class="text-slate-600">Blondel's law, rearranged.</span>
+                            <code class="block mt-1 font-mono text-[11px] text-sky-800 bg-sky-50 rounded px-2 py-1">G = 630 − 2 × 176.47 = <b>277.06 mm</b></code>
+                        </li>
+                        <li>
+                            <b class="text-slate-900">4 · Step depth and overlap.</b>
+                            <span class="text-slate-600">Add a 45 mm overlap, round the depth to the nearest 10 mm, then take the overlap back out.</span>
+                            <code class="block mt-1 font-mono text-[11px] text-sky-800 bg-sky-50 rounded px-2 py-1">d = round(277.06 + 45) = 322.06 → <b>320 mm</b> · overlap = 320 − 277.06 = <b>42.94 mm</b></code>
+                        </li>
+                        <li>
+                            <b class="text-slate-900">5 · Landing step.</b>
+                            <span class="text-slate-600">Optional step in the extension of the upper floor; choose it slightly larger than the overlap.</span>
+                            <code class="block mt-1 font-mono text-[11px] text-sky-800 bg-sky-50 rounded px-2 py-1">landing step ≥ 42.94 → <b>50 mm</b> (next 10 mm)</code>
+                        </li>
+                        <li>
+                            <b class="text-slate-900">6 · Angle.</b>
+                            <span class="text-slate-600">Trigonometry, step height over going.</span>
+                            <code class="block mt-1 font-mono text-[11px] text-sky-800 bg-sky-50 rounded px-2 py-1">θ = arctan(176.47 ÷ 277.06) = <b>32.49°</b></code>
+                        </li>
+                        <li>
+                            <b class="text-slate-900">7 · Total run.</b>
+                            <span class="text-slate-600">Every going, plus the landing step.</span>
+                            <code class="block mt-1 font-mono text-[11px] text-sky-800 bg-sky-50 rounded px-2 py-1">L = 16 × 277.06 + 50 = <b>4482.96 mm</b></code>
+                        </li>
+                        <li>
+                            <b class="text-slate-900">8 · Headroom.</b>
+                            <span class="text-slate-600">Measure at the ceiling edge, back from the top nosing.</span>
+                            <code class="block mt-1 font-mono text-[11px] text-sky-800 bg-sky-50 rounded px-2 py-1">headroom = tan(32.49°) × (3500 − 50) − 250 = <b>1947.45 mm</b></code>
+                        </li>
+                    </ol>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-2 leading-relaxed">
+                    The designer keeps the step depth exact (going + overlap) and takes the overlap as an input,
+                    so it can differ by a few millimetres from the hand-rounded example without changing the checks.
+                </p>
+            </section>
+
+            <section id="adjustments" class="scroll-mt-16">
+                <h2 class="text-lg font-bold text-slate-900">Adjustments</h2>
+                <p class="text-[11px] text-slate-500 mt-0.5 max-w-3xl">
+                    Change the step count or the Blondel value and re-run every formula. Fewer steps or a lower Blondel
+                    value shortens the run and raises the headroom; more steps or a higher Blondel value lengthen the
+                    run and eat the headroom.
+                </p>
+                <div class="mt-3 rounded-xl border border-slate-200 bg-white overflow-x-auto">
+                    <table class="num w-full text-[11px] text-right border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-500 text-[10px] uppercase tracking-wider">
+                                <th class="text-left font-bold px-3 py-2 sticky left-0 bg-slate-50">Quantity</th>
+                                <th class="font-bold px-3 py-2">Option A</th>
+                                <th class="font-bold px-3 py-2">Option B</th>
+                                <th class="font-bold px-3 py-2 text-sky-700">Example</th>
+                                <th class="font-bold px-3 py-2">Option C</th>
+                                <th class="font-bold px-3 py-2">Option D</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 font-mono">
+                            <tr><th class="text-left px-3 py-1.5 font-sans font-normal text-slate-500">Number of steps</th><td class="px-3 py-1.5">15</td><td class="px-3 py-1.5">16</td><td class="px-3 py-1.5 bg-sky-50">16</td><td class="px-3 py-1.5">16</td><td class="px-3 py-1.5">17</td></tr>
+                            <tr><th class="text-left px-3 py-1.5 font-sans font-normal text-slate-500">Blondel's law</th><td class="px-3 py-1.5">630 mm</td><td class="px-3 py-1.5">620 mm</td><td class="px-3 py-1.5 bg-sky-50">630 mm</td><td class="px-3 py-1.5">640 mm</td><td class="px-3 py-1.5">630 mm</td></tr>
+                            <tr><th class="text-left px-3 py-1.5 font-sans font-normal text-slate-500">Step height</th><td class="px-3 py-1.5">187.50 mm</td><td class="px-3 py-1.5">176.47 mm</td><td class="px-3 py-1.5 bg-sky-50">176.47 mm</td><td class="px-3 py-1.5">176.47 mm</td><td class="px-3 py-1.5">166.67 mm</td></tr>
+                            <tr><th class="text-left px-3 py-1.5 font-sans font-normal text-slate-500">Going</th><td class="px-3 py-1.5">255.00 mm</td><td class="px-3 py-1.5">267.06 mm</td><td class="px-3 py-1.5 bg-sky-50">277.06 mm</td><td class="px-3 py-1.5">287.06 mm</td><td class="px-3 py-1.5">296.67 mm</td></tr>
+                            <tr><th class="text-left px-3 py-1.5 font-sans font-normal text-slate-500">Step depth</th><td class="px-3 py-1.5">300 mm</td><td class="px-3 py-1.5">310 mm</td><td class="px-3 py-1.5 bg-sky-50">320 mm</td><td class="px-3 py-1.5">330 mm</td><td class="px-3 py-1.5">340 mm</td></tr>
+                            <tr><th class="text-left px-3 py-1.5 font-sans font-normal text-slate-500">Overlap</th><td class="px-3 py-1.5">45.00 mm</td><td class="px-3 py-1.5">42.94 mm</td><td class="px-3 py-1.5 bg-sky-50">42.94 mm</td><td class="px-3 py-1.5">42.94 mm</td><td class="px-3 py-1.5">43.33 mm</td></tr>
+                            <tr><th class="text-left px-3 py-1.5 font-sans font-normal text-slate-500">Landing step</th><td class="px-3 py-1.5">50 mm</td><td class="px-3 py-1.5">50 mm</td><td class="px-3 py-1.5 bg-sky-50">50 mm</td><td class="px-3 py-1.5">50 mm</td><td class="px-3 py-1.5">50 mm</td></tr>
+                            <tr><th class="text-left px-3 py-1.5 font-sans font-normal text-slate-500">Angle</th><td class="px-3 py-1.5">36.33°</td><td class="px-3 py-1.5">33.46°</td><td class="px-3 py-1.5 bg-sky-50">32.49°</td><td class="px-3 py-1.5">31.58°</td><td class="px-3 py-1.5">29.33°</td></tr>
+                            <tr><th class="text-left px-3 py-1.5 font-sans font-normal text-slate-500">Total run</th><td class="px-3 py-1.5">3875.00 mm</td><td class="px-3 py-1.5">4322.96 mm</td><td class="px-3 py-1.5 bg-sky-50">4482.96 mm</td><td class="px-3 py-1.5">4642.96 mm</td><td class="px-3 py-1.5">5093.39 mm</td></tr>
+                            <tr><th class="text-left px-3 py-1.5 font-sans font-normal text-slate-500">Headroom</th><td class="px-3 py-1.5 text-emerald-700">2286.75 mm</td><td class="px-3 py-1.5 text-amber-700">2029.74 mm</td><td class="px-3 py-1.5 bg-sky-50 text-emerald-700">1947.45 mm</td><td class="px-3 py-1.5 text-rose-700">1870.90 mm</td><td class="px-3 py-1.5 text-rose-700">1688.16 mm</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-[10px] text-slate-500 mt-1.5">
+                    Amber headroom is below the 2100 mm ideal; red is below the 1900 mm minimum. Total run includes the
+                    50 mm landing step. Values use the rounded going shown; the designer computes from the unrounded numbers.
+                </p>
+            </section>
+
+            <section id="angles" class="scroll-mt-16">
+                <h2 class="text-lg font-bold text-slate-900">Angle bands</h2>
+                <p class="text-[11px] text-slate-500 mt-0.5">A stair sits between 20° and 50°; steeper is a ladder, shallower is a ramp.</p>
+                <div class="mt-3 rounded-xl border border-slate-200 bg-white overflow-x-auto max-w-2xl">
+                    <table class="num w-full text-[12px] border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-500 text-[10px] uppercase tracking-wider text-left">
+                                <th class="font-bold px-3 py-2">Angle</th>
+                                <th class="font-bold px-3 py-2">Use</th>
+                                <th class="font-bold px-3 py-2">Desired angle</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 font-mono">
+                            <tr><td class="px-3 py-1.5">0° → 20°</td><td class="px-3 py-1.5 font-sans">Ramp / rail</td><td class="px-3 py-1.5">7° → 15°</td></tr>
+                            <tr><td class="px-3 py-1.5">20° → 50°</td><td class="px-3 py-1.5 font-sans font-semibold text-sky-800">Stair</td><td class="px-3 py-1.5">30° → 35°</td></tr>
+                            <tr><td class="px-3 py-1.5">50° → 75°</td><td class="px-3 py-1.5 font-sans">Mill ladder</td><td class="px-3 py-1.5">50° → 60°</td></tr>
+                            <tr><td class="px-3 py-1.5">75° → 90°</td><td class="px-3 py-1.5 font-sans">Ladder</td><td class="px-3 py-1.5">75° → 85°</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <footer class="border-t border-slate-200 pt-3 pb-6 text-[10px] text-slate-500 leading-relaxed">
+                Method and ranges follow the EasyStair straight-stair page as recorded in <span class="font-mono">STAIR CALC.MD</span>
+                and implemented in <span class="font-mono">features/stairs/designer.js</span>. Metric design aid; the placed
+                stair is checked again against the IRC/IBC profile and the AHJ governs.
+            </footer>
+        </main>
+    </div>
+
+    <script src="../assets/page-scripts/stair-glossary.js"></script>
+    <script type="module" src="../shared/site.js"></script>
+</body>
+</html>

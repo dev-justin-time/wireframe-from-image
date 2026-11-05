@@ -23,7 +23,6 @@ import {
   kitchenResult,
   landscapeResult,
   bidResult,
-  bidTotals,
   scheduleResult,
   priceBookResult,
   projectRollup,
@@ -48,6 +47,8 @@ import {
 import { createElevationDrag } from './engines/scene/scene-elevation.js';
 import { apply3DAbilities } from './engines/scene/scene-abilities.js';
 import { createHistory } from './plan-history.js';
+import { reportModel } from './report-data.js';
+import { reportPdf } from './report-pdf.js';
 import { FARMHOUSE } from './demo/farmhouse/manifest.js';
 
 const GROUPS = [
@@ -113,6 +114,68 @@ const state = { data: loadPlan() };
 // The 3D screen owns a WebGL context and an animation loop; the router stops it
 // when another screen takes over.
 let activeViewer = null;
+
+// ---- plan history ----------------------------------------------------------
+// Undo and redo are not the editor's private stack: a plan can be replaced by an
+// upload, an import or a 3D item drag, so the history sits here and every screen
+// records into it. A snapshot is `{ plan }`, never the plan itself, so "there was
+// no plan" is a state an undo can return to.
+const planHistory = createHistory({ limit: 60 });
+
+const snapshotPlan = () => ({
+  plan: state.data ? JSON.parse(JSON.stringify(state.data)) : null,
+});
+
+function syncHistoryButtons() {
+  for (const [id, enabled] of [['undo', planHistory.canUndo], ['ed-undo', planHistory.canUndo],
+    ['redo', planHistory.canRedo], ['ed-redo', planHistory.canRedo]]) {
+    const button = document.getElementById(id);
+    if (button) button.disabled = !enabled;
+  }
+}
+
+/** Remember the plan before an edit; the caller then writes the new one. */
+function recordPlan() {
+  planHistory.record(snapshotPlan());
+  syncHistoryButtons();
+}
+
+/** Put a snapshot back and let the current screen redraw the plan it reads. */
+function restorePlan(plan, note) {
+  if (plan) { state.data = plan; savePlan(plan); } else { clearPlan(); }
+  syncHistoryButtons();
+  render();
+  setStatus(note);
+}
+
+function undoPlan() {
+  const previous = planHistory.undo(snapshotPlan());
+  if (!previous) { setStatus('nothing to undo'); return; }
+  restorePlan(previous.plan, 'undo');
+}
+
+function redoPlan() {
+  const next = planHistory.redo(snapshotPlan());
+  if (!next) { setStatus('nothing to redo'); return; }
+  restorePlan(next.plan, 'redo');
+}
+
+// The shortcuts travel with the history, so they work on every screen. Typing in
+// a field is never a shortcut, the guard the editor and CivilGPT's hook share.
+window.addEventListener('keydown', (event) => {
+  const active = document.activeElement;
+  if (['INPUT', 'SELECT', 'TEXTAREA'].includes(active?.tagName)
+    || active?.getAttribute('contenteditable') === 'true') return;
+  const command = event.ctrlKey || event.metaKey;
+  const key = event.key.toLowerCase();
+  if (command && key === 'z' && !event.shiftKey) {
+    event.preventDefault();
+    undoPlan();
+  } else if (command && (key === 'y' || (key === 'z' && event.shiftKey))) {
+    event.preventDefault();
+    redoPlan();
+  }
+});
 
 const num = (v, d = 0) => { const n = Number(v); return Number.isFinite(n) ? n : d; };
 const f = (v, d = 2) => (Number.isFinite(Number(v)) ? Number(v) : 0).toFixed(d);
@@ -252,11 +315,12 @@ function download(name, text, type = 'application/json') {
   setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 }
 
-function setStatus() {
+function setStatus(note = '') {
   const el = document.getElementById('status');
-  if (!state.data) { el.textContent = 'no plan loaded'; return; }
+  const suffix = note ? ` · ${note}` : '';
+  if (!state.data) { el.textContent = `no plan loaded${suffix}`; return; }
   const d = state.data;
-  el.textContent = `${d.project || 'plan'} · ${d.rooms.length} rooms · ${d.walls.length} walls · ${f(d.takeoff.floorArea, 1)} m²`;
+  el.textContent = `${d.project || 'plan'} · ${d.rooms.length} rooms · ${d.walls.length} walls · ${f(d.takeoff.floorArea, 1)} m²${suffix}`;
 }
 
 function planResult(host) {
@@ -905,6 +969,9 @@ function scene3D(root) {
         `dragging · lift ${f(event.lift, 2)} m · top at ${f(event.top, 2)} m · snaps to the same run`;
     },
     onCommit: (fixture) => {
+      // One snapshot per finished drag: the plan still holds the piece where it
+      // started, so undo can put it back.
+      recordPlan();
       const next = applyItemObjects(data(), placedItems);
       state.data = next;
       savePlan(next);
@@ -920,6 +987,7 @@ function scene3D(root) {
         ? `item at (${f(space.toMetres(moved.x, moved.y).x, 2)}, ${f(space.toMetres(moved.x, moved.y).z, 2)}) m `
           + `· lift ${f(moved.elevation, 2)} m · saved`
         : `${next.items?.length ?? 0} items`;
+      syncHistoryButtons();
     },
   });
   // The drag listens on the window; leaving the screen has to unbind it or the
@@ -976,7 +1044,9 @@ function planStudio(root) {
     try {
       const res = await fetch('/api/plan', { method: 'POST', body: new FormData(form) });
       if (!res.ok) throw new Error(await res.text());
-      state.data = await res.json();
+      const detected = await res.json();
+      recordPlan();
+      state.data = detected;
       const saved = savePlan(state.data);
       setStatus();
       planResult(result);
@@ -987,7 +1057,9 @@ function planStudio(root) {
     }
   };
   root.querySelector('#clear').onclick = () => {
+    recordPlan();
     clearPlan();
+    syncHistoryButtons();
     setStatus();
     planResult(result);
     msg.textContent = 'saved plan cleared';
@@ -1005,6 +1077,7 @@ function planStudio(root) {
         dxfMsg.innerHTML = `<span class="err">${esc(imported.error)}</span>`;
         return;
       }
+      recordPlan();
       state.data = imported.plan;
       const saved = savePlan(state.data);
       setStatus();
@@ -1035,6 +1108,7 @@ function planStudio(root) {
         geoMsg.innerHTML = `<span class="err">${esc(imported.error)}</span>`;
         return;
       }
+      recordPlan();
       state.data = imported.plan;
       const saved = savePlan(state.data);
       setStatus();
@@ -1998,21 +2072,23 @@ function permits(root) {
 }
 
 /**
- * The printable report: what the extractor read, the takeoff quantities a
- * builder orders from, the rooms, and the contract the engines price, on one
- * sheet. The composition is CivilGPT's export — summary, metrics grid, notes,
- * bill of quantities, grand total — written by the browser's print pipeline
- * instead of jsPDF, because this studio has no build step to carry it.
+ * The report: what the extractor read, the takeoff quantities a builder orders
+ * from, the rooms, and the contract the engines price.
+ *
+ * The composition is CivilGPT's export — summary, metrics grid, notes, bill of
+ * quantities, grand total. The screen draws it as a sheet, and `report-data.js`
+ * holds the same content for `report-pdf.js`, which writes it as an A4 file with
+ * the studio's own PDF writer instead of jsPDF.
  */
 function report(root) {
   const d = data();
   root.innerHTML = `<h2>Report</h2>
     <p class="note">One sheet from the plan: what was read, the quantities a builder orders from, the
-      rooms, and the contract the engines price. Print it, or save it as a PDF from the print dialog.</p>
+      rooms, and the contract the engines price. The preview below is the report the PDF carries.</p>
     <div class="row">
-      <button id="rp-print">Print / save as PDF</button>
+      <button id="rp-pdf">Download PDF</button>
       <a class="btn" href="#" id="rp-json">Download plan JSON</a>
-      <span class="hint">Ctrl+P prints the same sheet; the studio navigation and these buttons are left out.</span>
+      <span class="hint">A4 portrait, written in this browser: a PDF file, not a print dialog.</span>
     </div>
     <div id="rp-sheet"></div>`;
   const host = root.querySelector('#rp-sheet');
@@ -2020,80 +2096,33 @@ function report(root) {
     host.innerHTML = '<p class="hint">No plan yet — open <a href="#/plan-studio">Plan studio</a> and upload a drawing.</p>';
     return;
   }
-  const t = d.takeoff ?? {};
-  const totals = bidTotals(d, {});
-  const money = (value) => `$${Math.round(num(value)).toLocaleString('en-US')}`;
-  const source = d.source === 'pdf' ? 'PDF vectors'
-    : d.source === 'dxf' ? 'DXF import'
-      : d.source === 'geo' ? `${String(d.imported?.kind ?? 'kml').toUpperCase()} import`
-        : d.source === 'editor' ? 'drawn in the editor' : 'detected from the upload';
-  const markup = totals.bid?.config?.markup ?? {};
+  const model = reportModel(d);
   const rows = (list) => list.filter(([, value]) => value !== undefined && value !== null)
     .map(([label, value, unit]) => `<tr><th>${esc(label)}</th><td>${value}</td><td>${esc(unit ?? '')}</td></tr>`).join('');
-  const takeoffRows = [
-    ['Wall length', f(t.wallLength), 'm'],
-    ['Wall area (gross)', t.wallGrossArea === undefined ? undefined : f(t.wallGrossArea), 'm²'],
-    ['Openings', t.doors === undefined && t.windows === undefined ? undefined
-      : `${t.doors ?? 0} door · ${t.windows ?? 0} window`,
-    t.openingArea === undefined ? '' : `${f(t.openingArea)} m²`],
-    ['Wall area (net)', t.wallNetArea !== undefined ? f(t.wallNetArea)
-      : (t.wallGrossArea === undefined ? undefined : f(t.wallGrossArea)), 'm²'],
-    ['Floor area', f(t.floorArea), 'm²'],
-    ['Volume', t.volume === undefined ? undefined : f(t.volume), 'm³'],
-    ['Drywall (2.4 × 1.2 m)', t.drywallSheets, 'sheets'],
-    ['Paint (2 coats)', t.paintLitres, 'L'],
-    ['Flooring (+10%)', t.flooringM2 === undefined ? undefined : f(t.flooringM2), 'm²'],
-    ['Baseboard', t.baseboardM === undefined ? undefined : f(t.baseboardM), 'm'],
-    ['Studs', t.studs, 'ea'],
-    ['Plates', t.platesM === undefined ? undefined : f(t.platesM), 'm'],
-    ['Sheathing', t.sheathingPanels, 'panels'],
-  ];
-  const costRows = [
-    ...totals.groups.map((group) => [group.label, money(group.subtotal), `${group.lines} lines`]),
-    ['Base of the work', money(totals.costs.base), ''],
-    ['Overhead', money(totals.costs.overhead), `${f(markup.overhead, 1)} %`],
-    ['Profit', money(totals.costs.profit), `${f(markup.profit, 1)} %`],
-    ['Contingency', money(totals.costs.contingency), `${f(markup.contingency, 1)} %`],
-    ['Permit', money(totals.costs.permit), ''],
-    ['Design fee', money(totals.costs.design), ''],
-    ['Pre-tax', money(totals.costs.preTax), ''],
-    ['Sales tax', money(totals.costs.tax), `${f(markup.tax, 1)} %`],
-    ['Total', money(totals.costs.total), ''],
-  ];
   host.innerHTML = `<article class="report">
     <header class="rp-head">
       <div><b>Blueprint Studio</b><span>Construction &amp; design report</span></div>
       <div class="rp-meta"><span>${esc(d.project || 'Plan')}</span>
         <span>${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span></div>
     </header>
-    <div class="rp-metrics">
-      <div><b>${d.walls.length}</b><span>walls</span></div>
-      <div><b>${d.rooms.length}</b><span>rooms</span></div>
-      <div><b>${f(t.floorArea, 1)}</b><span>m² floor</span></div>
-      <div><b>${money(totals.costs.total)}</b><span>contract</span></div>
-    </div>
+    <div class="rp-metrics">${model.metrics.map((metric) =>
+      `<div><b>${metric.value}</b><span>${metric.label}</span></div>`).join('')}</div>
     <h3>1. Plan summary</h3>
-    <table class="rp-table" id="rp-summary"><tbody>${rows([
-      ['Source', esc(source), ''],
-      ['Scale', d.mmPerPx ? `${f(d.mmPerPx, 1)} ${d.source === 'pdf' ? 'mm/pt' : 'mm/px'}` : '—', ''],
-      ['Extents', `${f(d.widthM, 1)} × ${f(d.depthM, 1)}`, 'm'],
-      ['Wall height', f(d.wallHeight, 2), 'm'],
-      ['Stud spacing', num(d.studSpacingMm, 0), 'mm'],
-      ['Edits', d.edited ? 'walls edited since the upload' : 'as extracted', ''],
-    ])}</tbody></table>
+    <table class="rp-table" id="rp-summary"><tbody>${rows(model.summary)}</tbody></table>
     <h3>2. Takeoff</h3>
-    <table class="rp-table" id="rp-takeoff"><tbody>${rows(takeoffRows)}</tbody></table>
+    <table class="rp-table" id="rp-takeoff"><tbody>${rows(model.takeoff)}</tbody></table>
     <h3>3. Rooms</h3>
     <table class="rp-table" id="rp-rooms"><thead><tr><th>Room</th><th>Area</th><th>Perimeter</th></tr></thead>
-      <tbody>${d.rooms.map((room) => `<tr><td>${esc(room.name || 'Room')}</td>
-        <td>${f(room.area, 2)} m²</td><td>${f(room.perimeter, 2)} m</td></tr>`).join('')}</tbody></table>
+      <tbody>${model.rooms.map((room) => `<tr><td>${esc(room.name)}</td>
+        <td>${room.area}</td><td>${room.perimeter}</td></tr>`).join('')}</tbody></table>
     <h3>4. Priced work</h3>
-    <table class="rp-table" id="rp-costs"><tbody>${rows(costRows)}</tbody></table>
-    <p class="rp-foot">${t.stale
-    ? 'Areas and wall lengths are recomputed from the edited walls; the sheet quantities are from the upload the edit started from. '
-    : ''}Quantities are measured on the wall centre lines and priced by the engine price book, not a supplier quote.</p>
+    <table class="rp-table" id="rp-costs"><tbody>${rows(model.costs)}</tbody></table>
+    <p class="rp-foot">${esc(model.note)}</p>
   </article>`;
-  root.querySelector('#rp-print').onclick = () => window.print();
+  root.querySelector('#rp-pdf').onclick = () => {
+    const name = String(model.title).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'plan';
+    download(`${name}-report.pdf`, reportPdf(d), 'application/pdf');
+  };
   root.querySelector('#rp-json').onclick = (event) => {
     event.preventDefault();
     download(`${d.project || 'plan'}.json`, JSON.stringify(d.plan ?? d, null, 2));
@@ -2358,6 +2387,7 @@ function render() {
   const view = document.getElementById('view');
   view.innerHTML = '';
   (VIEWS[id] || home)(view);
+  syncHistoryButtons();
   document.querySelectorAll('#nav a').forEach((link) => {
     link.classList.toggle('on', link.dataset.id === id);
   });

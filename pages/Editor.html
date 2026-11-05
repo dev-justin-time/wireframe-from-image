@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+ <meta charset="utf-8">
+    <script src="../shared/error-reporting.js"></script>
+
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>3D Blueprint Editor</title>
+    <meta name="description" content="The 3D Blueprint Studio: draw walls, place and frame fixtures, apply finishes and walk the plan in 3D.">
+    <link rel="canonical" href="https://dev-justin-time.github.io/floorplan_3d/pages/Editor.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Floorplan 3D">
+    <meta property="og:title" content="3D Blueprint Editor">
+    <meta property="og:description" content="The 3D Blueprint Studio: draw walls, place and frame fixtures, apply finishes and walk the plan in 3D.">
+    <meta property="og:url" content="https://dev-justin-time.github.io/floorplan_3d/pages/Editor.html">
+    <meta property="og:image" content="../assets/images/hero-plan-1.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="3D Blueprint Editor">
+    <meta name="twitter:description" content="The 3D Blueprint Studio: draw walls, place and frame fixtures, apply finishes and walk the plan in 3D.">
+    <meta name="twitter:image" content="../assets/images/hero-plan-1.png">
+<link rel="stylesheet" href="../assets/tailwind.css">
+    <link rel="stylesheet" href="../assets/fonts/fonts.css">
+<link rel="stylesheet" href="../assets/style.css">
+
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom scrollbar for sidebar */
+        aside::-webkit-scrollbar {
+            width: 6px;
+        }
+        aside::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        aside::-webkit-scrollbar-thumb {
+            background-color: rgba(156, 163, 175, 0.5);
+            border-radius: 3px;
+        }
+    </style>
+
+</head>
+<body class="font-display bg-background-light dark:bg-background-dark text-gray-800 dark:text-gray-200 overflow-hidden">
+    <div class="relative flex h-screen w-full flex-col">
+        <header class="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-sm shadow-sm">
+            <nav class="container mx-auto flex items-center justify-between whitespace-nowrap border-b border-gray-200 dark:border-gray-800 px-6 py-4">
+                <div class="flex items-center gap-4 text-gray-900 dark:text-white">
+                    <span class="material-symbols-outlined text-primary text-3xl">view_in_ar</span>
+                    <h2 class="text-xl font-bold tracking-[-0.015em]">Blueprint Editor</h2>
+                </div>
+                <div class="hidden md:flex flex-1 justify-center items-center gap-6">
+                    <div class="flex items-center gap-1 rounded-lg bg-gray-200 dark:bg-gray-800 p-1">
+                        <button data-click="undo" aria-label="Undo" class="flex h-8 w-8 items-center justify-center rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-gray-200 transition-colors" title="Undo (Ctrl+Z)">
+                            <span class="material-symbols-outlined text-xl">undo</span>
+                        </button>
+                        <button data-click="redo" aria-label="Redo" class="flex h-8 w-8 items-center justify-center rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-gray-200 transition-colors" title="Redo (Ctrl+Shift+Z)">
+                            <span class="material-symbols-outlined text-xl">redo</span>
+                        </button>
+                    </div>
+                    <div class="flex items-center gap-1 rounded-lg bg-gray-200 dark:bg-gray-800 p-1" role="group" aria-label="View mode" title="Editing mode: 1 plan · 2 orbit · 3 elevation">
+                        <button data-view-mode="2d" data-click="setViewMode" data-args='["2d"]' aria-pressed="true" class="px-3 py-1 rounded-md text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-white/60 dark:hover:bg-gray-700 transition-colors">2D</button>
+                        <button data-view-mode="3d" data-click="setViewMode" data-args='["3d"]' aria-pressed="false" class="px-3 py-1 rounded-md text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-white/60 dark:hover:bg-gray-700 transition-colors">3D</button>
+                        <button data-view-mode="elevation" data-click="setViewMode" data-args='["elevation"]' aria-pressed="false" class="px-3 py-1 rounded-md text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-white/60 dark:hover:bg-gray-700 transition-colors">Elevation</button>
+                    </div>
+                    <button id="walk-btn" data-click="toggleWalk" class="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="Walk the plan in first person: WASD or arrows to move, mouse or drag to look, Shift to run, Esc to exit">
+                        <span class="material-symbols-outlined text-base">directions_walk</span>
+                        <span>Walk</span>
+                    </button>
+                    <!-- Adds the next storey above the active one (features/studio/storeys.js). -->
+                    <button id="add-level-btn" data-click="addStorey" class="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title="Add a storey level above this one">
+                        <span class="material-symbols-outlined text-base">add_home</span>
+                        <span>Add level</span>
+                    </button>
+                    
+                    <div class="flex items-center gap-2 border-l border-gray-300 dark:border-gray-700 pl-4">
+                        <label class="flex items-center gap-2 cursor-pointer select-none" title="Toggle Dimensions">
+                            <div class="relative">
+                                <input type="checkbox" class="sr-only peer" checked="" data-click="toggleDimensions">
+                                <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                            </div>
+                            <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Dims</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer select-none" title="Toggle Ceiling">
+                            <div class="relative">
+                                <input type="checkbox" id="ceiling-toggle" class="sr-only peer" data-click="toggleCeiling">
+                                <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                            </div>
+                            <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Ceiling</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer select-none" title="Toggle Roof">
+                            <div class="relative">
+                                <input type="checkbox" id="roof-toggle" class="sr-only peer" data-click="toggleRoof">
+                                <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                            </div>
+                            <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Roof</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer select-none" title="Show the wall studs instead of the finished walls">
+                            <div class="relative">
+                                <input type="checkbox" id="framing-header-toggle" class="sr-only peer" data-change="toggleFraming">
+                                <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                            </div>
+                            <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Framing</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <a href="plumbing-designer.html" class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 text-gray-800 dark:text-white text-sm font-bold tracking-[0.015em] hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors gap-2" title="Open the rough-in and finish plumbing suite">
+                        <span class="material-symbols-outlined text-base">water_drop</span>
+                        <span class="truncate">Plumbing</span>
+                    </a>
+                    <a href="lighting-designer.html" class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 text-gray-800 dark:text-white text-sm font-bold tracking-[0.015em] hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors gap-2" title="Open the lighting, switch and socket plan suite">
+                        <span class="material-symbols-outlined text-base">lightbulb</span>
+                        <span class="truncate">Lighting</span>
+                    </a>
+                    <a href="landscape-designer.html" class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 text-gray-800 dark:text-white text-sm font-bold tracking-[0.015em] hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors gap-2" title="Open the pool, spa and landscape water-feature suite">
+                        <span class="material-symbols-outlined text-base">pool</span>
+                        <span class="truncate">Landscape</span>
+                    </a>
+                    <a href="kitchen-designer.html" class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 text-gray-800 dark:text-white text-sm font-bold tracking-[0.015em] hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors gap-2" title="Open the kitchen suite: runs, fillers, air gaps and clearances">
+                        <span class="material-symbols-outlined text-base">countertops</span>
+                        <span class="truncate">Kitchen</span>
+                    </a>
+            <a href="framing-designer.html" class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 text-gray-800 dark:text-white text-sm font-bold tracking-[0.015em] hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors gap-2" title="Open the wall framing suite">Framing</a>
+            <a href="deck-designer.html" class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 text-gray-800 dark:text-white text-sm font-bold tracking-[0.015em] hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors gap-2">Deck</a>
+            <a href="electrical-designer.html" class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 text-gray-800 dark:text-white text-sm font-bold tracking-[0.015em] hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors gap-2">Electrical</a>
+            <a href="project-dashboard.html" class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 text-gray-800 dark:text-white text-sm font-bold tracking-[0.015em] hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors gap-2">Dashboard</a>
+            <a href="price-book.html" class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 text-gray-800 dark:text-white text-sm font-bold tracking-[0.015em] hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors gap-2">Prices</a>
+            <a href="bid-builder.html" class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 text-gray-800 dark:text-white text-sm font-bold tracking-[0.015em] hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors gap-2">Bid</a>
+                    <button data-go="index.html" class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 text-gray-800 dark:text-white text-sm font-bold tracking-[0.015em] hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors gap-2">
+                        <span class="material-symbols-outlined text-base">arrow_back</span>
+                        <span class="truncate">Home</span>
+                    </button>
+                </div>
+            </nav>
+        </header>
+        
+        <main class="flex h-full grow overflow-hidden">
+            <!-- Sidebar -->
+            <aside class="w-72 flex-shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-background-dark/95 p-4 flex flex-col gap-4 overflow-y-auto z-20 shadow-xl">
+                <!-- Import/Export -->
+                <div class="item-category">
+                    <div class="item-category-header pb-2 border-b border-gray-100 dark:border-gray-700">
+                        <h3 class="text-sm uppercase tracking-wider font-bold text-gray-500 dark:text-gray-400">Project</h3>
+                    </div>
+                    <div class="space-y-2 mt-3">
+                        <button data-show="#upload-modal" class="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left text-sm font-medium">
+                            <span class="material-symbols-outlined text-primary">upload_file</span>
+                            Import Floorplan
+                        </button>
+                        
+                        <!-- Background Scale Control -->
+                        <div class="px-2 py-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="text-xs font-medium text-gray-500">Plan Scale</label>
+                                <span id="bg-scale-val" class="text-xs font-mono">1.0x</span>
+                            </div>
+                            <input type="range" min="0.1" max="5" step="0.1" value="1" class="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary" data-input="setBgScale">
+                        </div>
+
+                        <!-- Room area / volume readout (features/room-metrics.js) -->
+                        <div class="px-2 py-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="text-xs font-medium text-gray-500">Area / volume</label>
+                            </div>
+                            <span id="plan-metrics" class="text-xs font-mono text-gray-700 dark:text-gray-200">—</span>
+                        </div>
+
+                        <!-- Per-room item count and cost (features/advanced/summary.js) -->
+                        <div class="px-2 py-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="text-xs font-medium text-gray-500">Items · cost</label>
+                                <span id="room-summary-total" class="text-[10px] font-mono text-gray-500">—</span>
+                            </div>
+                            <div id="room-summary" class="space-y-0.5"><p class="text-xs text-gray-400">—</p></div>
+                        </div>
+
+                        <button data-click="exportProject" class="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left text-sm font-medium">
+                            <span class="material-symbols-outlined text-green-500">download</span>
+                            Save Project
+                        </button>
+                        <button data-click="startNewProject" data-confirm="Start a new project? The current plan stays in autosave until you draw." class="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left text-sm font-medium">
+                            <span class="material-symbols-outlined text-primary">note_add</span>
+                            Start New
+                        </button>
+                        <button data-click="showMasterScene" class="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left text-sm font-medium" title="Master scene: all storeys visible, every overlay on, 3D view">
+                            <span class="material-symbols-outlined text-purple-500">layers</span>
+                            Master Scene
+                        </button>
+                        
+                        <div class="grid grid-cols-3 gap-2 mt-2">
+                            <button data-click="export3D" data-args='["obj"]' class="flex items-center justify-center gap-1 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 transition-colors text-xs font-bold">
+                                .OBJ
+                            </button>
+                            <button data-click="export3D" data-args='["gltf"]' class="flex items-center justify-center gap-1 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 transition-colors text-xs font-bold">
+                                .GLTF
+                            </button>
+                            <button data-click="exportGLB" class="flex items-center justify-center gap-1 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 transition-colors text-xs font-bold" title="Binary glTF with embedded textures">
+                                .GLB
+                            </button>
+                        </div>
+
+                        <!-- Manufacturing output (features/studio/manufacturing.js) -->
+                        <div class="grid grid-cols-2 gap-2">
+                            <button data-click="exportManufacturing" data-args='["csv"]' class="flex items-center justify-center gap-1 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 transition-colors text-[11px] font-bold" title="Panel cut list, grouped by size">
+                                CSV cut list
+                            </button>
+                            <button data-click="exportManufacturing" data-args='["dxf"]' class="flex items-center justify-center gap-1 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 transition-colors text-[11px] font-bold" title="Nested parts DXF on 2440 x 1220 sheets">
+                                Nested DXF
+                            </button>
+                        </div>
+                        <p id="manufacturing-stats" class="text-[10px] font-mono text-gray-500 px-1"></p>
+                    </div>
+                </div>
+
+                <!-- Named browser projects (features/studio/projects.js) -->
+                <div class="item-category">
+                    <div class="item-category-header flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
+                        <h3 class="text-sm uppercase tracking-wider font-bold text-gray-500 dark:text-gray-400">Projects</h3>
+                        <button data-click="refreshProjects" class="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700" title="Refresh saved projects">
+                            <span class="material-symbols-outlined text-base text-gray-400">refresh</span>
+                        </button>
+                    </div>
+                    <div class="mt-2 space-y-2">
+                        <div class="flex gap-1">
+                            <input id="project-name" type="text" placeholder="Project name" class="flex-1 min-w-0 text-[11px] rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 py-1 text-gray-800 dark:text-gray-100">
+                            <button data-click="saveProjectAs" class="px-2 py-1 rounded-lg bg-primary text-white text-[11px] font-bold" title="Save this project in the browser">Save</button>
+                        </div>
+                        <div id="projects-list" class="space-y-1 max-h-40 overflow-y-auto pr-1"></div>
+                    </div>
+                </div>
+
+                <!-- Storeys (features/studio/storeys.js) -->
+                <div class="item-category">
+                    <div class="item-category-header flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
+                        <h3 class="text-sm uppercase tracking-wider font-bold text-gray-500 dark:text-gray-400">Storeys</h3>
+                        <button data-click="addStorey" class="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700" title="Add a storey above this one">
+                            <span class="material-symbols-outlined text-base text-primary">add</span>
+                        </button>
+                    </div>
+                    <div id="storeys-list" class="mt-2 space-y-1 max-h-48 overflow-y-auto pr-1"></div>
+                    <label class="block text-[10px] uppercase text-gray-400 mt-2">Clear wall height (m)
+                        <input id="storey-height" type="number" min="1.8" max="6" step="0.01" value="2.44" data-input="setStoreyHeight" class="mt-0.5 w-full rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-1 py-0.5 text-[11px] font-mono text-gray-800 dark:text-gray-100">
+                    </label>
+                    <p id="storey-pitch" class="text-[10px] font-mono text-gray-400 mt-1">96 in walls + 8 in joists = 2.64 m</p>
+
+                    <!-- Cutout tool output (features/studio/openings-plan.js) -->
+                    <div class="mt-2 rounded-lg bg-gray-50 dark:bg-gray-800/50 p-2 space-y-1">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] uppercase tracking-wide text-gray-400">Floor openings</span>
+                            <span id="openings-count" class="text-[10px] font-mono text-gray-500">0</span>
+                        </div>
+                        <div id="openings-list" class="space-y-0.5 max-h-28 overflow-y-auto pr-1"></div>
+                        <p class="text-[10px] text-gray-400 leading-snug">Cutout tool (C): drag over the slab; drag a point to reshape; double-click an edge to add one.</p>
+                    </div>
+                </div>
+
+                <!-- Framing overlay (features/framing/scene.js) -->
+                <div class="item-category">
+                    <div class="item-category-header flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
+                        <h3 class="text-sm uppercase tracking-wider font-bold text-gray-500 dark:text-gray-400">Framing</h3>
+                        <span id="framing-summary" class="text-[10px] font-mono text-gray-400">off</span>
+                    </div>
+                    <label class="flex items-center gap-2 mt-2 cursor-pointer select-none text-[11px] font-medium text-gray-600 dark:text-gray-300">
+                        <input id="framing-check" type="checkbox" data-change="toggleFraming">
+                        Show wall framing
+                    </label>
+                    <div id="framing-rows" class="mt-1.5 space-y-0.5 text-[10px] leading-snug"></div>
+                    <p id="framing-note" class="text-[10px] text-gray-400 leading-snug mt-1"></p>
+                    <p class="text-[10px] text-gray-400 leading-snug mt-1">16 in on center studs, kings and jacks at the openings, sized headers, treated sole plate and a double top plate. <a href="framing-designer.html" class="text-primary underline hover:text-sky-700">Framing suite</a></p>
+                </div>
+
+                <!-- Roof suite (features/studio/roof.js + features/roof) -->
+                <div class="item-category">
+                    <div class="item-category-header flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
+                        <h3 class="text-sm uppercase tracking-wider font-bold text-gray-500 dark:text-gray-400">Roof</h3>
+                        <span id="roof-summary" class="text-[10px] font-mono text-gray-400" title="Roof area for the top storey">—</span>
+                    </div>
+                    <div class="mt-2 space-y-2">
+                        <label class="block text-[10px] uppercase text-gray-400">Truss style
+                            <select id="roof-style-select" data-change="setRoofOption" data-args='["style"]' class="mt-0.5 w-full rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-1 py-0.5 text-[11px] text-gray-800 dark:text-gray-100"></select>
+                        </label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="block text-[10px] uppercase text-gray-400">Pitch (x:12)
+                                <input id="roof-pitch" type="number" min="0.5" max="16" step="0.25" value="6" data-input="setRoofOption" data-args='["pitch"]' class="mt-0.5 w-full rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-1 py-0.5 text-[11px] font-mono text-gray-800 dark:text-gray-100">
+                            </label>
+                            <label class="block text-[10px] uppercase text-gray-400">Overhang (m)
+                                <input id="roof-overhang" type="number" min="0" max="1.5" step="0.05" value="0.5" data-input="setRoofOption" data-args='["overhang"]' class="mt-0.5 w-full rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-1 py-0.5 text-[11px] font-mono text-gray-800 dark:text-gray-100">
+                            </label>
+                        </div>
+                        <label class="block text-[10px] uppercase text-gray-400">Covering
+                            <select id="roof-covering-select" data-change="setRoofOption" data-args='["covering"]' class="mt-0.5 w-full rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-1 py-0.5 text-[11px] text-gray-800 dark:text-gray-100"></select>
+                        </label>
+                        <label class="block text-[10px] uppercase text-gray-400">Rain gutter
+                            <select id="roof-gutter-select" data-change="setRoofOption" data-args='["gutter"]' class="mt-0.5 w-full rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-1 py-0.5 text-[11px] text-gray-800 dark:text-gray-100"></select>
+                        </label>
+                        <div class="flex items-center justify-between gap-2 text-[11px] text-gray-600 dark:text-gray-300">
+                            <label class="flex items-center gap-1.5"><input type="checkbox" id="roof-gutters" checked data-change="setRoofOption" data-args='["gutters"]'> Gutters</label>
+                            <label class="flex items-center gap-1.5"><input type="checkbox" id="roof-ridge-vent" checked data-change="setRoofOption" data-args='["ridgeVent"]'> Ridge vent</label>
+                        </div>
+                        <p class="text-[10px] text-gray-400 leading-snug">The header Roof switch shows the top storey roof. <a href="roof-designer.html" class="text-primary underline hover:text-sky-700">Roof suite</a> designs it, with the full takeoff and glossary.</p>
+                    </div>
+                </div>
+
+                <!-- OCR of the imported plan (features/ocr.js) -->
+                <div class="item-category">
+                    <div class="item-category-header flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
+                        <h3 class="text-sm uppercase tracking-wider font-bold text-gray-500 dark:text-gray-400">Plan text</h3>
+                        <span id="plan-text-count" class="text-[10px] font-mono text-gray-400">0</span>
+                    </div>
+                    <div class="mt-2 grid grid-cols-3 gap-1">
+                        <button id="plan-text-run" data-click="planOcr.runCurrent" class="p-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-[11px] font-bold disabled:opacity-40" title="Read plan words with open-source Tesseract.js (dimensions, rooms, scale, areas)">Read text</button>
+                        <button id="plan-symbols-run" data-click="planOcr.runSymbols" class="p-2 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800 text-[11px] font-bold disabled:opacity-40" title="Read plan symbols locally (doors, windows, fixtures, markers) — no download">Read symbols</button>
+                        <button id="plan-text-print" data-click="planOcr.print" class="p-2 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-[11px] font-bold disabled:opacity-40" title="Print every reading/note at its location origin">Print</button>
+                        <button id="plan-text-copy" data-click="planOcr.copy" class="p-2 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-[11px] font-bold disabled:opacity-40" title="Copy every reading with its image + plan origin">Copy</button>
+                        <button id="plan-text-clear" data-click="planOcr.clear" class="col-span-2 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-[11px] font-bold disabled:opacity-40" title="Remove the OCR overlay and results">Clear</button>
+                    </div>
+                    <p id="plan-text-status" class="text-[10px] text-gray-400 mt-1">Import a plan, then read its words + symbols.</p>
+                    <div id="plan-text-list" class="mt-2 space-y-1 max-h-48 overflow-y-auto pr-1">
+                        <p class="text-xs text-gray-400">No readings yet.</p>
+                    </div>
+                    <p class="text-[10px] text-gray-400 leading-snug mt-1">Words via open-source Tesseract.js, symbols via the local reader; every reading prints on the plan at its location origin.</p>
+                </div>
+
+                <!-- Per-room floor materials (features/studio/room-surfaces.js) -->
+                <div class="item-category">
+                    <div class="item-category-header py-2 border-b border-gray-100 dark:border-gray-700">
+                        <h3 class="text-sm uppercase tracking-wider font-bold text-gray-500 dark:text-gray-400">Room floors</h3>
+                    </div>
+                    <div id="room-floors-list" class="mt-2 space-y-1 max-h-48 overflow-y-auto pr-1"></div>
+                </div>
+
+                <!-- Finish textures, global or per wall (legacy app.html palette) -->
+                <div class="item-category">
+                    <div class="item-category-header py-2 border-b border-gray-100 dark:border-gray-700">
+                        <h3 class="text-sm uppercase tracking-wider font-bold text-gray-500 dark:text-gray-400">Finishes</h3>
+                    </div>
+                    <div class="grid grid-cols-2 gap-1 rounded-lg bg-gray-100 dark:bg-gray-800 p-1 mt-2">
+                        <button id="finish-target-wall" data-click="setFinishTarget" data-args='["wall"]' class="text-[11px] font-semibold rounded-md py-1 bg-white dark:bg-gray-700 shadow-sm text-gray-800 dark:text-gray-100">Walls</button>
+                        <button id="finish-target-floor" data-click="setFinishTarget" data-args='["floor"]' class="text-[11px] font-semibold rounded-md py-1 text-gray-500">Floors</button>
+                    </div>
+                    <div id="finish-textures" class="grid grid-cols-2 gap-1 mt-2"></div>
+                    <p class="text-[10px] uppercase text-gray-400 mt-2">Colour</p>
+                    <div id="finish-colours" class="flex flex-wrap gap-1 mt-1"></div>
+                    <label class="block text-[10px] uppercase text-gray-400 mt-2">Custom image
+                        <input id="finish-upload" type="file" accept="image/*" class="mt-0.5 block w-full text-[10px] text-gray-500 dark:text-gray-400">
+                    </label>
+                    <p id="finish-status" class="text-[10px] font-mono text-gray-400 mt-1">Walls · default</p>
+                    <p class="text-[10px] uppercase text-gray-400 mt-2">Covering</p>
+                    <select id="wall-covering-select" data-change="applyWallCovering" class="mt-0.5 w-full rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-1 py-0.5 text-[10px]"></select>
+                    <p id="wall-covering-status" class="text-[10px] font-mono text-gray-400 mt-1">—</p>
+                    <p class="text-[10px] text-gray-400 leading-snug mt-1">No wall selected applies the covering to every wall. <a href="wall-designer.html" class="text-primary underline hover:text-sky-700">Wall suite</a> designs paint, plaster, wallpaper, panels, tile and exterior cladding.</p>
+                </div>
+
+                <!-- NKBA layout solver (features/studio/layout-solver.js) -->
+                <div class="item-category">
+                    <div class="item-category-header flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
+                        <h3 class="text-sm uppercase tracking-wider font-bold text-gray-500 dark:text-gray-400">Kitchen check</h3>
+                        <span data-kitchen-score class="text-[10px] font-mono text-gray-400">—</span>
+                    </div>
+                    <div id="kitchen-check" class="mt-2 max-h-36 overflow-y-auto space-y-0.5 pr-1"></div>
+                    <div class="grid grid-cols-2 gap-1 mt-2">
+                        <button data-click="analyzeKitchen" class="p-2 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 text-[11px] font-bold" title="Re-run the NKBA clearance checks">Analyze</button>
+                        <button data-click="suggestKitchenRun" data-args='[5]' class="p-2 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 text-[11px] font-bold" title="Place five base cabinets along the longest wall">Suggest run</button>
+                    </div>
+                    <p class="text-[10px] text-gray-400 leading-snug mt-1">Plan-level clearances. <a href="kitchen-designer.html" class="text-primary underline hover:text-sky-700">Kitchen suite</a> designs a run with fillers, air gaps and landing space.</p>
+                </div>
+
+                <!-- Cross-suite systems: bid, deck, electrical, framing, wall (features/systems.js) -->
+                <div class="item-category">
+                    <div class="item-category-header flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
+                        <h3 class="text-sm uppercase tracking-wider font-bold text-gray-500 dark:text-gray-400">Systems</h3>
+                        <span id="systems-status" class="text-[10px] font-mono text-gray-400" title="Systems with a design in this project">—</span>
+                    </div>
+                    <div id="systems-tabs" class="grid grid-cols-5 gap-1 mt-2"></div>
+                    <div id="systems-body" class="mt-2 space-y-1 max-h-72 overflow-y-auto pr-1">
+                        <p class="text-xs text-gray-400">Select a system.</p>
+                    </div>
+                </div>
+
+                <!-- Presence and comments (features/studio/collaboration.js) -->
+                <div class="item-category">
+                    <div class="item-category-header flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
+                        <h3 class="text-sm uppercase tracking-wider font-bold text-gray-500 dark:text-gray-400">Comments</h3>
+                        <span data-presence-count class="text-[10px] font-mono text-gray-400">offline</span>
+                    </div>
+                    <div class="mt-2 space-y-1">
+                        <div class="flex gap-1">
+                            <input id="comment-text" type="text" placeholder="Add a comment…" class="flex-1 min-w-0 text-[11px] rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 py-1 text-gray-800 dark:text-gray-100">
+                            <button data-click="addCommentHere" class="px-2 py-1 rounded-lg bg-primary text-white text-[11px] font-bold" title="Pin a comment at the cursor">Add</button>
+                        </div>
+                        <p class="text-[10px] text-gray-400">Turn on “Comment pins” in Abilities, then click the plan to place one.</p>
+                        <div id="comment-list" class="space-y-1 max-h-40 overflow-y-auto pr-1"></div>
+                    </div>
+                </div>
+
+                <!-- Tools -->
+                <div class="item-category">
+                    <div class="item-category-header pb-2 border-b border-gray-100 dark:border-gray-700">
+                        <h3 class="text-sm uppercase tracking-wider font-bold text-gray-500 dark:text-gray-400">Tools</h3>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2 mt-3">
+                        <button class="tool-btn active flex flex-col items-center justify-center p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-primary transition-all shadow-sm" data-tool="wall" title="Shortcut: W">
+                            <span class="material-symbols-outlined text-gray-700 dark:text-gray-200 mb-1">edit</span>
+                            <span class="text-xs font-bold text-gray-600 dark:text-gray-300">Wall</span>
+                        </button>
+                        <button class="tool-btn flex flex-col items-center justify-center p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-primary hover:text-primary transition-all shadow-sm group" data-tool="select" title="Select &amp; drag (Escape) — G moves, R rotates in 3D">
+                            <span class="material-symbols-outlined text-gray-700 dark:text-gray-200 group-hover:text-primary mb-1">arrow_selector_tool</span>
+                            <span class="text-xs font-bold text-gray-600 dark:text-gray-300 group-hover:text-primary">Select</span>
+                        </button>
+                        <button class="tool-btn flex flex-col items-center justify-center p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-red-500 hover:text-red-500 transition-all shadow-sm group" data-tool="delete" title="Shortcut: D">
+                            <span class="material-symbols-outlined text-gray-700 dark:text-gray-200 group-hover:text-red-500 mb-1">delete</span>
+                            <span class="text-xs font-bold text-gray-600 dark:text-gray-300 group-hover:text-red-500">Delete</span>
+                        </button>
+                        <button class="tool-btn flex flex-col items-center justify-center p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-sky-500 hover:text-sky-500 transition-all shadow-sm group" data-tool="cutout" title="Cut a stair opening in this floor: drag a rectangle, drag a point to reshape, double-click an edge to add a point, Delete to remove (C)">
+                            <span class="material-symbols-outlined text-gray-700 dark:text-gray-200 group-hover:text-sky-500 mb-1">crop_free</span>
+                            <span class="text-xs font-bold text-gray-600 dark:text-gray-300 group-hover:text-sky-500">Cutout</span>
+                        </button>
+                        <button class="flex flex-col items-center justify-center p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-orange-500 hover:text-orange-500 transition-all shadow-sm group" data-click="clearProject" data-confirm="Clear entire project? This cannot be undone." title="Clear All">
+                            <span class="material-symbols-outlined text-gray-700 dark:text-gray-200 group-hover:text-orange-500 mb-1">delete_sweep</span>
+                            <span class="text-xs font-bold text-gray-600 dark:text-gray-300 group-hover:text-orange-500">Clear</span>
+                        </button>
+                    </div>
+
+                    <!-- Grid size selector (features/grid.js) -->
+                    <div class="mt-3 flex items-center justify-between gap-2 px-1">
+                        <label for="grid-size-select" class="text-xs font-medium text-gray-500 dark:text-gray-400">Grid</label>
+                        <select id="grid-size-select" data-change="setGridSize" class="text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 py-1 text-gray-800 dark:text-gray-100">
+                            <option value="0">Off</option>
+                            <option value="25">25 cm</option>
+                            <option value="50">50 cm</option>
+                            <option value="100" selected>1 m</option>
+                            <option value="200">2 m</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Selection inspector: walls and items -->
+                <div class="item-category">
+                    <div class="item-category-header pb-2 border-b border-gray-100 dark:border-gray-700">
+                        <h3 class="text-sm uppercase tracking-wider font-bold text-gray-500 dark:text-gray-400">Selection</h3>
+                    </div>
+                    <div class="mt-3 space-y-2">
+                        <p id="selection-empty" class="text-xs text-gray-400">Select an object or a wall to inspect it.</p>
+
+                        <div id="selection-item" class="hidden space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span id="sel-item-name" class="text-sm font-bold capitalize text-gray-800 dark:text-gray-100">-</span>
+                                <span class="text-[10px] uppercase tracking-wide text-gray-400">item</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <div>
+                                    <span class="block text-[10px] uppercase text-gray-400">Position</span>
+                                    <span id="sel-item-pos" class="font-mono text-gray-700 dark:text-gray-200">-</span>
+                                </div>
+                                <div>
+                                    <span class="block text-[10px] uppercase text-gray-400">Lift</span>
+                                    <span id="sel-item-elev" class="font-mono text-gray-700 dark:text-gray-200">-</span>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-1">
+                                <label class="block text-[10px] uppercase text-gray-400">W cm
+                                    <input id="sel-item-width" type="number" min="5" step="1" class="mt-0.5 w-full rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-1 py-0.5 text-[11px] font-mono text-gray-800 dark:text-gray-100" data-input="setItemSize" data-args='["width"]'>
+                                </label>
+                                <label class="block text-[10px] uppercase text-gray-400">D cm
+                                    <input id="sel-item-depth" type="number" min="5" step="1" class="mt-0.5 w-full rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-1 py-0.5 text-[11px] font-mono text-gray-800 dark:text-gray-100" data-input="setItemSize" data-args='["depth"]'>
+                                </label>
+                                <label class="block text-[10px] uppercase text-gray-400">H cm
+                                    <input id="sel-item-height" type="number" min="5" step="1" class="mt-0.5 w-full rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-1 py-0.5 text-[11px] font-mono text-gray-800 dark:text-gray-100" data-input="setItemSize" data-args='["height"]'>
+                                </label>
+                            </div>
+                            <!-- Parametric cabinet configurator (features/studio/parametric.js) -->
+                            <div id="cabinet-config" class="hidden space-y-1 rounded-lg bg-gray-50 dark:bg-gray-800/50 p-2">
+                                <span class="text-[10px] uppercase tracking-wide text-gray-400">Parametric cabinet</span>
+                                <div class="grid grid-cols-2 gap-1">
+                                    <label class="block text-[10px] uppercase text-gray-400">Door style
+                                        <select id="cabinet-door-style" data-change="setCabinetConfig" data-args='["doorStyle"]' class="mt-0.5 w-full rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-1 py-0.5 text-[11px] text-gray-800 dark:text-gray-100">
+                                            <option value="slab">Slab</option>
+                                            <option value="shaker">Shaker</option>
+                                            <option value="glass">Glass</option>
+                                            <option value="open">Open</option>
+                                        </select>
+                                    </label>
+                                    <label class="block text-[10px] uppercase text-gray-400">Doors
+                                        <input id="cabinet-doors" type="number" min="0" max="4" step="1" data-input="setCabinetConfig" data-args='["doors"]' class="mt-0.5 w-full rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-1 py-0.5 text-[11px] font-mono text-gray-800 dark:text-gray-100">
+                                    </label>
+                                    <label class="block text-[10px] uppercase text-gray-400">Drawers
+                                        <input id="cabinet-drawers" type="number" min="0" max="4" step="1" data-input="setCabinetConfig" data-args='["drawers"]' class="mt-0.5 w-full rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-1 py-0.5 text-[11px] font-mono text-gray-800 dark:text-gray-100">
+                                    </label>
+                                    <label class="block text-[10px] uppercase text-gray-400">Shelves
+                                        <input id="cabinet-shelves" type="number" min="0" max="6" step="1" data-input="setCabinetConfig" data-args='["shelves"]' class="mt-0.5 w-full rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-1 py-0.5 text-[11px] font-mono text-gray-800 dark:text-gray-100">
+                                    </label>
+                                </div>
+                            </div>
+                            <label class="block text-[10px] uppercase text-gray-400">Rotation °
+                                <input id="sel-item-rotation" type="number" step="15" class="mt-0.5 w-full rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-1 py-0.5 text-[11px] font-mono text-gray-800 dark:text-gray-100" data-input="setItemRotation">
+                            </label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button data-click="toggleSelectedVisibility" class="flex items-center justify-center gap-1 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 transition-colors" title="Hide or show the selected item (H)">
+                                    <span class="material-symbols-outlined text-base text-gray-600 dark:text-gray-300">visibility</span>
+                                    <span id="sel-item-visible" class="text-[11px] font-bold">Hide</span>
+                                </button>
+                                <button data-click="toggleSelectedLock" class="flex items-center justify-center gap-1 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 transition-colors" title="Lock or unlock the selected item (L)">
+                                    <span class="material-symbols-outlined text-base text-gray-600 dark:text-gray-300">lock</span>
+                                    <span id="sel-item-lock" class="text-[11px] font-bold">Lock</span>
+                                </button>
+                                <button data-click="duplicateSelected" class="flex items-center justify-center gap-1 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 transition-colors" title="Duplicate the selected item (Ctrl+D)">
+                                    <span class="material-symbols-outlined text-base text-gray-600 dark:text-gray-300">content_copy</span>
+                                    <span class="text-[11px] font-bold">Duplicate</span>
+                                </button>
+                                <button data-click="deleteSelected" class="flex items-center justify-center gap-1 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/20 border border-gray-200 dark:border-gray-700 hover:border-red-400 transition-colors" title="Delete the selected item">
+                                    <span class="material-symbols-outlined text-base text-red-500">delete</span>
+                                    <span class="text-[11px] font-bold text-red-500">Delete</span>
+                                </button>
+                            </div>
+                            <!-- Feature kit item transforms (features/transforms.js) -->
+                            <div class="grid grid-cols-2 gap-1">
+                                <button data-click="flipSelected" class="flex items-center justify-center gap-1 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 transition-colors" title="Mirror the selected item">
+                                    <span class="material-symbols-outlined text-base text-gray-600 dark:text-gray-300">flip</span>
+                                    <span class="text-[11px] font-bold">Flip</span>
+                                </button>
+                                <button data-click="repeatSelected" class="flex items-center justify-center gap-1 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 transition-colors" title="Repeat the item along its run">
+                                    <span class="material-symbols-outlined text-base text-gray-600 dark:text-gray-300">view_week</span>
+                                    <span class="text-[11px] font-bold">Repeat</span>
+                                </button>
+                                <button id="sel-item-lock-x" data-click="toggleAxisLock" data-args='["x"]' class="p-2 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 transition-colors text-[11px] font-bold" title="Lock movement on the plan X axis">Lock X</button>
+                                <button id="sel-item-lock-z" data-click="toggleAxisLock" data-args='["z"]' class="p-2 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 transition-colors text-[11px] font-bold" title="Lock movement on the plan Z axis">Lock Z</button>
+                            </div>
+                        </div>
+
+                        <div id="selection-wall" class="hidden space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-bold text-gray-800 dark:text-gray-100">Wall</span>
+                                <span id="sel-wall-len" class="text-[11px] font-mono text-gray-500">-</span>
+                            </div>
+                            <label class="block text-[11px] text-gray-500 dark:text-gray-400">Height (m)
+                                <input id="sel-wall-height" type="number" min="0.5" max="6" step="0.1" value="2.7" data-input="setWallHeight" class="mt-1 w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 py-1 text-xs text-gray-800 dark:text-gray-100">
+                            </label>
+                            <!-- Per-wall finish (features/wall-finish.js) -->
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="block text-[11px] text-gray-500 dark:text-gray-400">Colour
+                                    <input id="sel-wall-color" type="color" value="#e0e0e0" data-input="setWallColor" class="mt-1 w-full h-8 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                                </label>
+                                <label class="block text-[11px] text-gray-500 dark:text-gray-400">Texture
+                                    <select id="sel-wall-texture" data-change="setWallTexture" class="mt-1 w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-1 py-1 text-xs text-gray-800 dark:text-gray-100">
+                                        <option value="">Storey default</option>
+                                        <option value="paint">Paint</option>
+                                        <option value="marble">Marble</option>
+                                        <option value="wood">Wood</option>
+                                        <option value="tile">Tile</option>
+                                        <option value="concrete">Concrete</option>
+                                        <option value="stone">Stone</option>
+                                    </select>
+                                </label>
+                            </div>
+                            <button data-click="deleteSelectedWall" class="w-full flex items-center justify-center gap-1 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/20 border border-gray-200 dark:border-gray-700 hover:border-red-400 transition-colors">
+                                <span class="material-symbols-outlined text-base text-red-500">delete</span>
+                                <span class="text-[11px] font-bold text-red-500">Delete wall</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scene abilities (generated from scene-abilities.js) -->
+                <div class="item-category">
+                    <div class="item-category-header cursor-pointer flex justify-between items-center py-2" data-disclosure="#abilities-list" data-icon="#abilities-list-icon">
+                        <h3 class="text-sm font-bold text-gray-900 dark:text-white">Abilities</h3>
+                        <div class="flex items-center gap-2">
+                            <span data-ability-count class="text-[10px] text-gray-400"></span>
+                            <span class="material-symbols-outlined text-gray-400" id="abilities-list-icon">expand_more</span>
+                        </div>
+                    </div>
+                    <div id="abilities-list" class="mt-1 max-h-72 overflow-y-auto pr-1"></div>
+                </div>
+
+                <!-- Lab kit controls (features/lab/kit.js) -->
+                <div class="item-category">
+                    <div class="item-category-header cursor-pointer flex justify-between items-center py-2" data-disclosure="#lab-controls" data-icon="#lab-controls-icon">
+                        <h3 class="text-sm font-bold text-gray-900 dark:text-white">Lab</h3>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] text-gray-400">post FX · product</span>
+                            <span class="material-symbols-outlined text-gray-400" id="lab-controls-icon">expand_more</span>
+                        </div>
+                    </div>
+                    <div id="lab-controls" class="mt-2 space-y-3">
+                        <label class="block text-[10px] uppercase tracking-wide text-gray-400">Instance count <span id="lab-instance-value" class="text-gray-500 dark:text-gray-300">40</span>
+                            <input id="lab-instance-count" type="range" min="0" max="300" step="10" value="40" data-input="setLabInstances" class="mt-1 w-full accent-sky-500">
+                        </label>
+                        <label class="block text-[10px] uppercase tracking-wide text-gray-400">Shake intensity <span id="lab-shake-value" class="text-gray-500 dark:text-gray-300">50%</span>
+                            <input id="lab-shake" type="range" min="0" max="1" step="0.1" value="0.5" data-input="setLabShake" class="mt-1 w-full accent-purple-500">
+                        </label>
+                        <label class="block text-[10px] uppercase tracking-wide text-gray-400">Placed-product scale <span id="lab-scale-value" class="text-gray-500 dark:text-gray-300">100%</span>
+                            <input id="lab-scale" type="range" min="0.4" max="2" step="0.1" value="1" data-input="setLabScale" class="mt-1 w-full accent-emerald-500">
+                        </label>
+                        <p class="text-[10px] leading-snug text-gray-400">Place the Shaker model from Decor &amp; 3D. The Lab abilities above add post FX, spring selection, the GPU prop field, auto-rotate and shake to placed models. WebGPU opens a preview overlay.</p>
+                    </div>
+                </div>
+
+                <!-- Placement checks (features/advanced/placement-rules.js) -->
+                <div class="item-category">
+                    <div class="item-category-header flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
+                        <h3 class="text-sm uppercase tracking-wider font-bold text-gray-500 dark:text-gray-400">Checks</h3>
+                        <span data-warning-count class="text-[10px] text-gray-400">0</span>
+                    </div>
+                    <div id="placement-warnings" class="mt-2 max-h-40 overflow-y-auto space-y-0.5 pr-1">
+                        <p class="text-xs text-gray-400">No placement issues.</p>
+                    </div>
+                </div>
+
+                <!-- Structures -->
+                <div class="item-category">
+                    <div class="item-category-header cursor-pointer flex justify-between items-center py-2" data-click="toggleCategory" data-args='["structure-items"]'>
+                        <h3 class="text-sm font-bold text-gray-900 dark:text-white">Structure</h3>
+                        <span class="material-symbols-outlined text-gray-400" id="structure-items-icon">expand_more</span>
+                    </div>
+                    <div id="structure-items" class="grid grid-cols-3 gap-2 mt-1">
+                        <button class="item-button flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" data-item="door">
+                            <span class="material-symbols-outlined text-gray-600 dark:text-gray-300">door_front</span>
+                            <span class="text-[10px] mt-1 text-center">Door</span>
+                        </button>
+                        <button class="item-button flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" data-item="window">
+                            <span class="material-symbols-outlined text-gray-600 dark:text-gray-300">window</span>
+                            <span class="text-[10px] mt-1 text-center">Window</span>
+                        </button>
+                        <button class="item-button flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" data-item="round_window">
+                            <span class="material-symbols-outlined text-gray-600 dark:text-gray-300">circle</span>
+                            <span class="text-[10px] mt-1 text-center">Round</span>
+                        </button>
+                        <button class="item-button flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" data-item="stair" title="Cuts a stair opening in the storey above">
+                            <span class="material-symbols-outlined text-gray-600 dark:text-gray-300">stairs</span>
+                            <span class="text-[10px] mt-1 text-center">Stair</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Outdoor stair systems (features/stairs/outdoor.js) -->
+                <div class="item-category">
+                    <div class="item-category-header cursor-pointer flex justify-between items-center py-2" data-click="toggleCategory" data-args='["outdoor-stair-items"]'>
+                        <h3 class="text-sm font-bold text-gray-900 dark:text-white">Outdoor stairs</h3>
+                        <span class="material-symbols-outlined text-gray-400" id="outdoor-stair-items-icon">expand_more</span>
+                    </div>
+                    <div id="outdoor-stair-items" class="grid grid-cols-3 gap-2 mt-1">
+                        <button class="item-button flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" data-item="stair_deck" title="IRC deck stair: 36 in, 36 in guard, frost-depth piers">
+                            <span class="material-symbols-outlined text-gray-600 dark:text-gray-300">deck</span>
+                            <span class="text-[10px] mt-1 text-center">Deck</span>
+                        </button>
+                        <button class="item-button flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" data-item="stair_porch" title="IRC porch stair with a door landing">
+                            <span class="material-symbols-outlined text-gray-600 dark:text-gray-300">house</span>
+                            <span class="text-[10px] mt-1 text-center">Porch</span>
+                        </button>
+                        <button class="item-button flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" data-item="stair_egress" title="IBC exterior egress stair: 44 in, 42 in guards">
+                            <span class="material-symbols-outlined text-gray-600 dark:text-gray-300">emergency_exit</span>
+                            <span class="text-[10px] mt-1 text-center">Egress</span>
+                        </button>
+                        <button class="item-button flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" data-item="stair_apartment" title="R-2 apartment building egress stair">
+                            <span class="material-symbols-outlined text-gray-600 dark:text-gray-300">apartment</span>
+                            <span class="text-[10px] mt-1 text-center">Apartment</span>
+                        </button>
+                        <button class="item-button flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" data-item="stair_concrete" title="Cast concrete walkway stair">
+                            <span class="material-symbols-outlined text-gray-600 dark:text-gray-300">foundation</span>
+                            <span class="text-[10px] mt-1 text-center">Concrete</span>
+                        </button>
+                        <button class="item-button flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" data-item="fire_pole" title="Fireman's pole with guard, mat and warning sign">
+                            <span class="material-symbols-outlined text-gray-600 dark:text-gray-300">vertical_align_bottom</span>
+                            <span class="text-[10px] mt-1 text-center">Fire pole</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Saved stair presets (features/stairs/presets.js) -->
+                <div class="item-category">
+                    <div class="item-category-header cursor-pointer flex justify-between items-center py-2" data-click="toggleCategory" data-args='["stair-preset-items"]'>
+                        <h3 class="text-sm font-bold text-gray-900 dark:text-white">My stairs</h3>
+                        <div class="flex items-center gap-2">
+                            <span id="stair-preset-count" class="text-[10px] text-gray-400"></span>
+                            <span class="material-symbols-outlined text-gray-400" id="stair-preset-items-icon">expand_more</span>
+                        </div>
+                    </div>
+                    <div id="stair-preset-items" class="mt-1"></div>
+                </div>
+
+                <!-- Landscape water features (features/landscape) -->
+                <div class="item-category">
+                    <div class="item-category-header cursor-pointer flex justify-between items-center py-2" data-click="toggleCategory" data-args='["landscape-items"]'>
+                        <h3 class="text-sm font-bold text-gray-900 dark:text-white">Landscape</h3>
+                        <span class="material-symbols-outlined text-gray-400" id="landscape-items-icon">expand_more</span>
+                    </div>
+                    <div id="landscape-items" class="grid grid-cols-3 gap-2 mt-1">
+                        <button class="item-button flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" data-item="pool" title="Swimming pool with deck, coping and barrier settings">
+                            <span class="material-symbols-outlined text-gray-600 dark:text-gray-300">pool</span>
+                            <span class="text-[10px] mt-1 text-center">Pool</span>
+                        </button>
+                        <button class="item-button flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" data-item="spa" title="Spa / hot tub with jets and a 104 F limit">
+                            <span class="material-symbols-outlined text-gray-600 dark:text-gray-300">hot_tub</span>
+                            <span class="text-[10px] mt-1 text-center">Spa</span>
+                        </button>
+                        <button class="item-button flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" data-item="fountain" title="Fountain basin, pedestal and jet">
+                            <span class="material-symbols-outlined text-gray-600 dark:text-gray-300">water</span>
+                            <span class="text-[10px] mt-1 text-center">Fountain</span>
+                        </button>
+                        <button class="item-button flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" data-item="pond" title="Ornamental pond with liner and rock edging">
+                            <span class="material-symbols-outlined text-gray-600 dark:text-gray-300">waves</span>
+                            <span class="text-[10px] mt-1 text-center">Pond</span>
+                        </button>
+                        <button class="item-button flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" data-item="waterfall" title="Weir wall with a falling water sheet">
+                            <span class="material-symbols-outlined text-gray-600 dark:text-gray-300">water_damage</span>
+                            <span class="text-[10px] mt-1 text-center">Waterfall</span>
+                        </button>
+                        <button class="item-button flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" data-item="water_wall" title="Water wall with a basin and top spout">
+                            <span class="material-symbols-outlined text-gray-600 dark:text-gray-300">view_stream</span>
+                            <span class="text-[10px] mt-1 text-center">Water wall</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stair suite option bar (features/stairs/panel.js) -->
+                <div class="item-category">
+                    <div class="item-category-header flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
+                        <h3 class="text-sm uppercase tracking-wider font-bold text-gray-500 dark:text-gray-400">Stair design</h3>
+                        <div class="flex items-center gap-1">
+                            <button data-click="addStairFromPanel" class="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700" title="Add the drafted stair at the plan centre">
+                                <span class="material-symbols-outlined text-base text-primary">add</span>
+                            </button>
+                            <button data-click="walkStairs" class="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700" title="Walk the stairs in first person (WASD, drag to look, Esc to exit)">
+                                <span class="material-symbols-outlined text-base text-gray-500">directions_walk</span>
+                            </button>
+                            <button data-click="saveStairPreset" class="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700" title="Save the selected stair as a preset in My stairs">
+                                <span class="material-symbols-outlined text-base text-gray-500">bookmark_add</span>
+                            </button>
+                            <a href="stair-designer.html" target="_blank" rel="noopener" class="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700" title="Open the straight stair designer (rise, run, going, headroom, 2D and 3D)">
+                                <span class="material-symbols-outlined text-base text-gray-500">straighten</span>
+                            </a>
+                            <a href="stair-parts.html" target="_blank" rel="noopener" class="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700" title="Open the wireframe parts catalogue">
+                                <span class="material-symbols-outlined text-base text-gray-500">category</span>
+                            </a>
+                            <a href="stair-gallery.html" target="_blank" rel="noopener" class="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700" title="Open the 3D gallery of all 12 stair models">
+                                <span class="material-symbols-outlined text-base text-gray-500">view_in_ar</span>
+                            </a>
+                            <a href="stair-glossary.html" target="_blank" rel="noopener" class="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700" title="Open the stair glossary and formulas">
+                                <span class="material-symbols-outlined text-base text-gray-500">menu_book</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div id="stair-controls" class="mt-2 space-y-1"></div>
+                    <div id="stair-summary" class="mt-2 max-h-40 overflow-y-auto space-y-0.5 text-[10px] font-mono text-gray-500"></div>
+                    <div class="grid grid-cols-2 gap-1 mt-2">
+                        <button data-click="exportStairTakeoff" class="p-2 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 text-[11px] font-bold" title="Parts takeoff for the selected or drafted stair">Takeoff CSV</button>
+                        <button data-click="refreshStairPanel" class="p-2 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 text-[11px] font-bold" title="Re-run the code checks">Check</button>
+                    </div>
+                    <p id="stair-walk-status" class="text-[10px] text-primary mt-1"></p>
+                    <p id="stair-preset-status" class="text-[10px] text-primary mt-1"></p>
+                </div>
+
+                <!-- Landscape option bar (features/landscape/panel.js) -->
+                <div class="item-category">
+                    <div class="item-category-header flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
+                        <h3 class="text-sm uppercase tracking-wider font-bold text-gray-500 dark:text-gray-400">Water features</h3>
+                        <button data-click="addLandscapeFromPanel" class="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700" title="Add the drafted water feature at the plan centre">
+                            <span class="material-symbols-outlined text-base text-primary">add</span>
+                        </button>
+                    </div>
+                    <div id="landscape-controls" class="mt-2 space-y-1"></div>
+                    <div id="landscape-summary" class="mt-2 max-h-40 overflow-y-auto space-y-0.5 text-[10px] font-mono text-gray-500"></div>
+                </div>
+
+                <!-- Merlot Cabinetry line -->
+                <div class="item-category">
+                    <div class="item-category-header cursor-pointer flex justify-between items-center py-2" data-click="toggleCategory" data-args='["merlot-items"]'>
+                        <h3 class="text-sm font-bold text-gray-900 dark:text-white">Merlot Cabinetry</h3>
+                        <span class="material-symbols-outlined text-gray-400" id="merlot-items-icon">expand_more</span>
+                    </div>
+                    <div id="merlot-items" class="mt-1">
+                        <label class="block text-[11px] text-gray-500 dark:text-gray-400 mb-1" for="merlot-select">Select a piece, then click the plan to place it</label>
+                        <select id="merlot-select" class="w-full text-xs p-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                            <option value="">Choose a piece…</option>
+                            <option value="merlot_base_cabinet">Base Cabinet 30"</option>
+                            <option value="merlot_drawer_base">Drawer Base 30"</option>
+                            <option value="merlot_sink_base">Sink Base 36"</option>
+                            <option value="merlot_corner_base">Corner Base 36"</option>
+                            <option value="merlot_wall_cabinet">Wall Cabinet 30"</option>
+                            <option value="merlot_wall_cabinet_double">Wall Cabinet 36" Double</option>
+                            <option value="merlot_tall_pantry">Tall Pantry 24"</option>
+                            <option value="merlot_oven_tower">Oven Tower 30"</option>
+                            <option value="merlot_island">Island 72"</option>
+                            <option value="merlot_open_shelf">Open Shelf 36"</option>
+                            <option value="merlot_crown">Crown Moulding 36"</option>
+                            <option value="merlot_bar_pull">Bar Pull (accent)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Shaker Cabinetry line (wireframe) -->
+                <div class="item-category">
+                    <div class="item-category-header cursor-pointer flex justify-between items-center py-2" data-click="toggleCategory" data-args='["shaker-items"]'>
+                        <h3 class="text-sm font-bold text-gray-900 dark:text-white">Shaker Cabinetry <span class="text-[10px] font-normal text-gray-400">wireframe</span></h3>
+                        <span class="material-symbols-outlined text-gray-400" id="shaker-items-icon">expand_more</span>
+                    </div>
+                    <div id="shaker-items" class="mt-1">
+                        <label class="block text-[11px] text-gray-500 dark:text-gray-400 mb-1" for="shaker-select">Select a piece, then click the plan to place it</label>
+                        <select id="shaker-select" class="w-full text-xs p-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                            <option value="">Choose a piece…</option>
+                            <option value="shaker_base_cabinet">Shaker Base 30"</option>
+                            <option value="shaker_drawer_base">Shaker Drawer Base 30"</option>
+                            <option value="shaker_sink_base">Shaker Sink Base 36"</option>
+                            <option value="shaker_wall_cabinet">Shaker Wall 24"</option>
+                            <option value="shaker_wall_cabinet_double">Shaker Wall 36" Double</option>
+                            <option value="shaker_tall_pantry">Shaker Tall Pantry 24"</option>
+                            <option value="shaker_island">Shaker Island 72"</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Furniture Categories -->
+                <div class="item-category">
+                    <div class="item-category-header cursor-pointer flex justify-between items-center py-2" data-click="toggleCategory" data-args='["furniture-items"]'>
+                        <h3 class="text-sm font-bold text-gray-900 dark:text-white">Furniture</h3>
+                        <span class="material-symbols-outlined text-gray-400" id="furniture-items-icon">expand_more</span>
+                    </div>
+                    <div id="furniture-items" class="grid grid-cols-3 gap-2 mt-1">
+                        <button class="item-button flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" data-item="bed_queen">
+                            <span class="material-symbols-outlined text-gray-600 dark:text-gray-300">bed</span>
+                            <span class="text-[10px] mt-1 text-center">Bed</span>
+                        </button>
+                        <button class="item-button flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" data-item="sofa">
+                            <span class="material-symbols-outlined text-gray-600 dark:text-gray-300">chair</span>
+                            <span class="text-[10px] mt-1 text-center">Sofa</span>
+                        </button>
+                        <button class="item-button flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" data-item="dining_table">
+                            <span class="material-symbols-outlined text-gray-600 dark:text-gray-300">table_restaurant</span>
+                            <span class="text-[10px] mt-1 text-center">Table</span>
+                        </button>
+                        <button class="item-button flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" data-item="wardrobe">
+                            <span class="material-symbols-outlined text-gray-600 dark:text-gray-300">door_sliding</span>
+                            <span class="text-[10px] mt-1 text-center">Wardrobe</span>
+                        </button>
+                        <button class="item-button flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" data-item="desk">
+                            <span class="material-symbols-outlined text-gray-600 dark:text-gray-300">desk</span>
+                            <span class="text-[10px] mt-1 text-center">Desk</span>
+                        </button>
+                        <button class="item-button flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" data-item="kitchen_cabinet">
+                            <span class="material-symbols-outlined text-gray-600 dark:text-gray-300">kitchen</span>
+                            <span class="text-[10px] mt-1 text-center">Cabinet</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Decor & Models -->
+                <div class="item-category">
+                    <div class="item-category-header cursor-pointer flex justify-between items-center py-2" data-click="toggleCategory" data-args='["decor-items"]'>
+                        <h3 class="text-sm font-bold text-gray-900 dark:text-white">Decor & 3D</h3>
+                        <span class="material-symbols-outlined text-gray-400" id="decor-items-icon">expand_more</span>
+                    </div>
+                    <div id="decor-items" class="grid grid-cols-3 gap-2 mt-1">
+                        <button class="item-button flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" data-item="shaker" title="Place the DRACO-loaded shaker product model">
+                            <span class="material-symbols-outlined text-gray-600 dark:text-gray-300">deployed_code</span>
+                            <span class="text-[10px] mt-1 text-center">Shaker model</span>
+                        </button>
+                        <button class="item-button flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" data-item="rug_round">
+                            <span class="material-symbols-outlined text-gray-600 dark:text-gray-300">all_out</span>
+                            <span class="text-[10px] mt-1 text-center">Rug</span>
+                        </button>
+                        <button class="item-button flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" data-item="floor_lamp">
+                            <span class="material-symbols-outlined text-gray-600 dark:text-gray-300">light</span>
+                            <span class="text-[10px] mt-1 text-center">Lamp</span>
+                        </button>
+                        <button class="item-button flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" data-item="potted_plant">
+                            <span class="material-symbols-outlined text-gray-600 dark:text-gray-300">potted_plant</span>
+                            <span class="text-[10px] mt-1 text-center">Plant</span>
+                        </button>
+                        <button class="item-button flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" data-item="painting">
+                            <span class="material-symbols-outlined text-gray-600 dark:text-gray-300">image</span>
+                            <span class="text-[10px] mt-1 text-center">Art</span>
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Viewport -->
+            <div id="viewport-container" class="flex-1  bg-gray-50 dark:bg-gray-900 overflow-hidden relative">
+                <!-- 2D View -->
+                <div id="view-2d" class="absolute inset-0 z-10 bg-white dark:bg-[#e5e5e5]">
+                    <canvas id="blueprint-canvas" class="block w-full h-full touch-none cursor-crosshair" tabindex="0" aria-label="Floor plan" aria-describedby="plan-a11y-summary"></canvas>
+                    <!-- Screen-reader summary of the plan; the canvas itself has no text. -->
+                    <p id="plan-a11y-summary" class="sr-only" aria-live="polite">Empty floor plan.</p>
+                    <div class="absolute bottom-6 left-1/2 -translate-x-1/2 bg-gray-900/80 backdrop-blur text-white px-4 py-2 rounded-full text-xs font-medium pointer-events-none shadow-lg">
+                        Left Click: Draw/Place • Right Click: Pan • Scroll: Zoom
+                    </div>
+                </div>
+                
+                <!-- 3D View -->
+                <div id="view-3d" class="absolute inset-0 z-0 opacity-0 pointer-events-none">
+                    <!-- role=group, not img: the panel can contain the WebGL failure alert, which must stay readable. -->
+                    <div id="render-3d-view" class="relative w-full h-full bg-gray-100 dark:bg-gray-800" role="group" aria-label="3D view of the floor plan" aria-describedby="plan-a11y-summary"></div>
+                    <!-- Height readout shown while dragging in elevation (features/elevation-annotations.js) -->
+                    <div id="height-readout" class="hidden absolute top-4 right-4 z-20 bg-gray-900/85 backdrop-blur text-white px-3 py-1.5 rounded-lg text-[11px] font-mono shadow-lg pointer-events-none"></div>
+                    <div id="elevation-hint" class="absolute bottom-6 left-1/2 -translate-x-1/2 bg-gray-900/80 backdrop-blur text-white px-4 py-2 rounded-full text-xs font-medium pointer-events-none shadow-lg">
+                        Click an object to select • G move • R rotate • Elevation for up/down
+                    </div>
+                    <!-- First-person walk HUD (features/studio/walk-mode.js) -->
+                    <div id="walk-hud" class="hidden absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-gray-900/85 backdrop-blur text-white px-4 py-2 rounded-full text-[11px] font-medium shadow-lg pointer-events-none">
+                        WASD / arrows move · mouse or drag to look · Shift to run · Esc to exit
+                    </div>
+                    <!-- Perf HUD: the labs FPS dashboard as a status chip (docs/audit.md §7) -->
+                    <div id="perf-hud" class="hidden absolute bottom-3 right-3 z-20 bg-gray-900/70 backdrop-blur text-white px-2.5 py-1 rounded-md text-[10px] font-mono shadow-lg pointer-events-none" title="Frames per second · draw calls · triangles (last rendered frame)">—</div>
+                </div>
+
+                <!-- View angles: orbit vs. the four side elevations -->
+                <div id="elevation-bar" class="absolute top-4 left-4 z-30 hidden items-center gap-1 rounded-lg bg-gray-900/80 backdrop-blur p-1 text-xs font-semibold text-white shadow-lg" role="group" aria-label="3D view and elevations" title="Orbit view or a head-on side elevation">
+                    <button class="elevation-btn px-3 py-1.5 rounded-md bg-primary font-bold transition-colors hover:bg-white/20" data-side="" aria-pressed="true" title="Orbit (free 3D)">3D</button>
+                    <button class="elevation-btn px-3 py-1.5 rounded-md transition-colors hover:bg-white/20" data-side="front" aria-pressed="false" title="Elevation looking from the front of the plan">Front</button>
+                    <button class="elevation-btn px-3 py-1.5 rounded-md transition-colors hover:bg-white/20" data-side="back" aria-pressed="false" title="Elevation looking from the back of the plan">Back</button>
+                    <button class="elevation-btn px-3 py-1.5 rounded-md transition-colors hover:bg-white/20" data-side="left" aria-pressed="false" title="Elevation looking from the left of the plan">Left</button>
+                    <button class="elevation-btn px-3 py-1.5 rounded-md transition-colors hover:bg-white/20" data-side="right" aria-pressed="false" title="Elevation looking from the right of the plan">Right</button>
+                    <!-- One wall at a time: step through the plan's walls. -->
+                    <span class="w-px h-5 bg-white/20 mx-1"></span>
+                    <button id="elevation-prev" class="px-2 py-1.5 rounded-md transition-colors hover:bg-white/20 disabled:opacity-30" aria-label="Previous wall" title="Previous wall">‹</button>
+                    <span id="elevation-wall-label" class="px-1 text-[10px] font-mono text-white/70 whitespace-nowrap">Wall</span>
+                    <button id="elevation-next" class="px-2 py-1.5 rounded-md transition-colors hover:bg-white/20 disabled:opacity-30" aria-label="Next wall" title="Next wall">›</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Upload Modal -->
+    <div id="upload-modal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg p-6 transform transition-all">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Import Floorplan</h3>
+                <button data-hide="#upload-modal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <!-- Image Upload -->
+                <div id="upload-image-btn" class="border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-primary dark:hover:border-primary rounded-xl p-6 text-center cursor-pointer transition-colors group">
+                    <div class="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 text-primary rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                        <span class="material-symbols-outlined text-2xl">image</span>
+                    </div>
+                    <h4 class="font-bold text-sm text-gray-900 dark:text-white mb-1">Load Image</h4>
+                    <p class="text-xs text-gray-500">Trace over a blueprint image manually</p>
+                </div>
+
+                <!-- JSON Upload -->
+                <div id="upload-json-btn" class="border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-green-500 dark:hover:border-green-500 rounded-xl p-6 text-center cursor-pointer transition-colors group">
+                    <div class="w-12 h-12 bg-green-50 dark:bg-green-900/20 text-green-500 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                        <span class="material-symbols-outlined text-2xl">data_object</span>
+                    </div>
+                    <h4 class="font-bold text-sm text-gray-900 dark:text-white mb-1">Load Project</h4>
+                    <p class="text-xs text-gray-500">Restore a previously saved .json file</p>
+                </div>
+
+                <!-- Drawing import: CAD linework or a surveyed site boundary -->
+                <div id="upload-dxf-btn" class="border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-sky-500 dark:hover:border-sky-500 rounded-xl p-6 text-center cursor-pointer transition-colors group" title="Turn CAD linework (DXF) or a site boundary (KML, KMZ, GeoJSON) into plan walls; the file is read locally">
+                    <div class="w-12 h-12 bg-sky-50 dark:bg-sky-900/20 text-sky-500 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                        <span class="material-symbols-outlined text-2xl">architecture</span>
+                    </div>
+                    <h4 class="font-bold text-sm text-gray-900 dark:text-white mb-1">Load Drawing</h4>
+                    <p class="text-xs text-gray-500">DXF linework, or a KML/KMZ/GeoJSON site boundary</p>
+                </div>
+
+                <!-- OCR Upload: words (Tesseract.js, open source) + symbols (local) -->
+                <div id="upload-ocr-btn" class="border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-amber-500 dark:hover:border-amber-500 rounded-xl p-6 text-center cursor-pointer transition-colors group" title="Read plan words (Tesseract.js, open source) and plan symbols (local reader) in one pass; readings print at their location origins">
+                    <div class="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                        <span class="material-symbols-outlined text-2xl">document_scanner</span>
+                    </div>
+                    <h4 class="font-bold text-sm text-gray-900 dark:text-white mb-1">Read Text + Symbols</h4>
+                    <p class="text-xs text-gray-500">OCR words + symbols, pinned at their origins</p>
+                </div>
+            </div>
+
+            <p id="upload-ocr-status" class="text-[10px] text-gray-400 text-center -mt-2 mb-4">Read Text + Symbols runs fully locally; the image is not uploaded. Every reading prints at its origin.</p>
+
+            <div class="relative">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-gray-200 dark:border-gray-700"></div>
+                </div>
+                <div class="relative flex justify-center text-sm">
+                    <span class="px-2 bg-white dark:bg-gray-800 text-gray-500">OR</span>
+                </div>
+            </div>
+
+            <div class="mt-6">
+                <div id="upload-ai-btn" class="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white p-4 rounded-xl shadow-lg cursor-pointer hover:shadow-xl transition-all hover:-translate-y-0.5 flex items-center justify-between group">
+                    <div class="flex items-center gap-4">
+                        <div class="p-2 bg-white/20 rounded-lg">
+                            <span class="material-symbols-outlined text-2xl">auto_awesome</span>
+                        </div>
+                        <div class="text-left">
+                            <h4 class="font-bold text-sm">AI Auto-Scan</h4>
+                            <p class="text-xs text-white/80">Automatically detect walls from image</p>
+                        </div>
+                    </div>
+                    <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                </div>
+            </div>
+
+            <input type="file" id="hidden-file-input" class="hidden">
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../assets/page-scripts/Editor.js"></script>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "/vendor/three/three.module.js",
+            "three/addons/": "/vendor/three/addons/",
+            "three/nodes": "/vendor/three/addons/nodes/Nodes.js",
+            "three-bvh-csg": "/vendor/three-bvh-csg/index.module.js",
+            "three-mesh-bvh": "/vendor/three-mesh-bvh/index.module.js"
+        }
+    }
+    </script>
+    <script type="module" src="../editor/editor.js"></script>
+    <script type="module" src="../shared/site.js"></script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+  <meta charset="utf-8">
+    <script src="../shared/error-reporting.js"></script>
+
+  <meta content="width=device-width, initial-scale=1" name="viewport">
+  <title>Pricing - Floorplan 3D</title>
+  <meta name="description" content="Plans and pricing for the Floorplan 3D editor and its design suites.">
+  <link rel="canonical" href="https://dev-justin-time.github.io/floorplan_3d/pages/pricing.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Floorplan 3D">
+  <meta property="og:title" content="Pricing - Floorplan 3D">
+  <meta property="og:description" content="Plans and pricing for the Floorplan 3D editor and its design suites.">
+  <meta property="og:url" content="https://dev-justin-time.github.io/floorplan_3d/pages/pricing.html">
+  <meta property="og:image" content="../assets/images/hero-plan-1.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Pricing - Floorplan 3D">
+  <meta name="twitter:description" content="Plans and pricing for the Floorplan 3D editor and its design suites.">
+  <meta name="twitter:image" content="../assets/images/hero-plan-1.png">
+<link rel="stylesheet" href="../assets/tailwind.css">
+    <link rel="stylesheet" href="../assets/fonts/fonts.css">
+</head>
+<body class="font-display bg-background-light dark:bg-background-dark text-gray-800 dark:text-gray-200">
+  <header class="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-sm">
+    <nav class="container mx-auto flex items-center justify-between whitespace-nowrap border-b border-gray-200 dark:border-gray-800 px-6 py-4">
+      <div class="flex items-center gap-4 text-gray-900 dark:text-white">
+        <span class="material-symbols-outlined text-primary text-3xl">view_in_ar</span>
+        <h2 class="text-xl font-bold tracking-[-0.015em]">Floorplan 3D</h2>
+      </div>
+      <div class="flex gap-2">
+        <button data-go="index.html" class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold tracking-[0.015em] hover:opacity-90 transition-opacity">
+          <span class="truncate">← Back to Home</span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="container mx-auto px-6 py-12">
+    <h1 class="text-4xl font-bold mb-4 text-center">Simple, Transparent Pricing</h1>
+    <p class="text-center text-gray-600 dark:text-gray-400 mb-12">Choose the plan that fits your needs</p>
+
+    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 mb-12 max-w-6xl mx-auto">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-2xl font-bold">Try Before You Buy</h2>
+        <div class="flex items-center gap-4">
+          <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Panorama</span>
+          <label class="relative inline-flex cursor-pointer items-center">
+            <input class="peer sr-only" type="checkbox" id="viewer-toggle"/>
+            <div class="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary peer-checked:after:translate-x-full peer-checked:after:border-white dark:border-gray-600 dark:bg-gray-700"></div>
+          </label>
+          <span class="text-sm font-medium text-gray-500 dark:text-gray-400">3D</span>
+        </div>
+      </div>
+      <div id="shared-viewer-container" style="width: 100%; height: 400px; position: relative; background: #f8f8f8; border-radius: 8px; overflow: hidden;">
+        <canvas id="viewer-panorama-canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: grab;"></canvas>
+        <div id="viewer-3d-view" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none;"></div>
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-8 border border-gray-200 dark:border-gray-700">
+        <h3 class="text-2xl font-bold mb-2">Free</h3>
+        <p class="text-gray-600 dark:text-gray-400 mb-6">Perfect for trying out</p>
+        <div class="text-4xl font-bold mb-6">$0<span class="text-lg text-gray-600 dark:text-gray-400">/month</span></div>
+        <ul class="space-y-3 mb-8">
+          <li class="flex items-center"><span class="material-symbols-outlined text-primary mr-2">check</span>3 Projects</li>
+          <li class="flex items-center"><span class="material-symbols-outlined text-primary mr-2">check</span>Basic 3D Views</li>
+          <li class="flex items-center"><span class="material-symbols-outlined text-primary mr-2">check</span>Standard Export</li>
+        </ul>
+        <button data-go="Editor.html" class="w-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white px-6 py-3 rounded-lg font-bold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+          Get Started
+        </button>
+      </div>
+
+      <div class="bg-primary/10 dark:bg-primary/20 rounded-xl p-8 border-2 border-primary relative">
+        <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-primary text-white px-4 py-1 rounded-full text-sm font-bold">
+          Popular
+        </div>
+        <h3 class="text-2xl font-bold mb-2">Pro</h3>
+        <p class="text-gray-600 dark:text-gray-400 mb-6">For professionals</p>
+        <div class="text-4xl font-bold mb-6">$29<span class="text-lg text-gray-600 dark:text-gray-400">/month</span></div>
+        <ul class="space-y-3 mb-8">
+          <li class="flex items-center"><span class="material-symbols-outlined text-primary mr-2">check</span>Unlimited Projects</li>
+          <li class="flex items-center"><span class="material-symbols-outlined text-primary mr-2">check</span>Advanced 3D & Panorama</li>
+          <li class="flex items-center"><span class="material-symbols-outlined text-primary mr-2">check</span>All Export Formats</li>
+          <li class="flex items-center"><span class="material-symbols-outlined text-primary mr-2">check</span>Photo Scanning</li>
+          <li class="flex items-center"><span class="material-symbols-outlined text-primary mr-2">check</span>Priority Support</li>
+        </ul>
+        <button data-go="Editor.html" class="w-full bg-primary text-white px-6 py-3 rounded-lg font-bold hover:opacity-90 transition-opacity">
+          Start Free Trial
+        </button>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-8 border border-gray-200 dark:border-gray-700">
+        <h3 class="text-2xl font-bold mb-2">Enterprise</h3>
+        <p class="text-gray-600 dark:text-gray-400 mb-6">For large teams</p>
+        <div class="text-4xl font-bold mb-6">Custom</div>
+        <ul class="space-y-3 mb-8">
+          <li class="flex items-center"><span class="material-symbols-outlined text-primary mr-2">check</span>Everything in Pro</li>
+          <li class="flex items-center"><span class="material-symbols-outlined text-primary mr-2">check</span>Team Collaboration</li>
+          <li class="flex items-center"><span class="material-symbols-outlined text-primary mr-2">check</span>API Access</li>
+          <li class="flex items-center"><span class="material-symbols-outlined text-primary mr-2">check</span>Custom Integration</li>
+          <li class="flex items-center"><span class="material-symbols-outlined text-primary mr-2">check</span>Dedicated Support</li>
+        </ul>
+        <button data-go="contact.html" class="w-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white px-6 py-3 rounded-lg font-bold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+          Contact Sales
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <script type="importmap">
+    {
+        "imports": {
+            "three": "/vendor/three/three.module.js",
+            "three/addons/": "/vendor/three/addons/",
+            "three/nodes": "/vendor/three/addons/nodes/Nodes.js",
+            "three-bvh-csg": "/vendor/three-bvh-csg/index.module.js",
+            "three-mesh-bvh": "/vendor/three-mesh-bvh/index.module.js"
+        }
+    }
+    </script>
+<script type="module" src="../assets/page-scripts/pricing.js"></script>
+    <script type="module" src="../shared/site.js"></script>
+</body>
+</html>
+

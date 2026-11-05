@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+  <meta charset="utf-8">
+    <script src="../shared/error-reporting.js"></script>
+
+  <meta content="width=device-width, initial-scale=1" name="viewport">
+  <title>Features - Floorplan 3D</title>
+  <meta name="description" content="Every suite in one editor: kitchen, stairs, deck, framing, electrical, plumbing, roof, walls, lighting and landscape.">
+  <link rel="canonical" href="https://dev-justin-time.github.io/floorplan_3d/pages/features.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Floorplan 3D">
+  <meta property="og:title" content="Features - Floorplan 3D">
+  <meta property="og:description" content="Every suite in one editor: kitchen, stairs, deck, framing, electrical, plumbing, roof, walls, lighting and landscape.">
+  <meta property="og:url" content="https://dev-justin-time.github.io/floorplan_3d/pages/features.html">
+  <meta property="og:image" content="../assets/images/hero-plan-1.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Features - Floorplan 3D">
+  <meta name="twitter:description" content="Every suite in one editor: kitchen, stairs, deck, framing, electrical, plumbing, roof, walls, lighting and landscape.">
+  <meta name="twitter:image" content="../assets/images/hero-plan-1.png">
+<link rel="stylesheet" href="../assets/tailwind.css">
+    <link rel="stylesheet" href="../assets/fonts/fonts.css">
+<link rel="stylesheet" href="../assets/animated-card.css">
+</head>
+<body class="font-display bg-background-light dark:bg-background-dark text-gray-800 dark:text-gray-200">
+  <header class="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-sm">
+    <nav class="container mx-auto flex items-center justify-between whitespace-nowrap border-b border-gray-200 dark:border-gray-800 px-6 py-4">
+      <div class="flex items-center gap-4 text-gray-900 dark:text-white">
+        <span class="material-symbols-outlined text-primary text-3xl">view_in_ar</span>
+        <h2 class="text-xl font-bold tracking-[-0.015em]">Floorplan 3D</h2>
+      </div>
+      <div class="flex gap-2">
+        <button data-go="index.html" class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold tracking-[0.015em] hover:opacity-90 transition-opacity">
+          <span class="truncate">← Back to Home</span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="container mx-auto px-6 py-12">
+    <h1 class="text-4xl font-bold mb-8 text-center">Features</h1>
+
+    <!-- NEW: Interactive Demo Section -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 mb-12">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-2xl font-bold">See It In Action</h2>
+        <div class="flex items-center gap-4">
+          <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Panorama</span>
+          <label class="relative inline-flex cursor-pointer items-center">
+            <input class="peer sr-only" type="checkbox" id="viewer-toggle"/>
+            <div class="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary peer-checked:after:translate-x-full peer-checked:after:border-white dark:border-gray-600 dark:bg-gray-700"></div>
+          </label>
+          <span class="text-sm font-medium text-gray-500 dark:text-gray-400">3D</span>
+        </div>
+      </div>
+      <div id="shared-viewer-container" style="width: 100%; height: 500px; position: relative; background: #f8f8f8; border-radius: 8px; overflow: hidden;">
+        <canvas id="viewer-panorama-canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: grab;"></canvas>
+        <div id="viewer-3d-view" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none;"></div>
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+        <span class="material-symbols-outlined text-primary text-4xl mb-4 block">auto_awesome</span>
+        <h3 class="text-xl font-bold mb-2">AI-Powered Conversion</h3>
+        <p class="text-gray-600 dark:text-gray-400">Automatically convert 2D blueprints to detailed 3D models using advanced AI algorithms.</p>
+      </div>
+      
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+        <span class="material-symbols-outlined text-primary text-4xl mb-4 block">draw</span>
+        <h3 class="text-xl font-bold mb-2">Interactive Editor</h3>
+        <p class="text-gray-600 dark:text-gray-400">Draw and edit floor plans with our intuitive blueprint editor tool.</p>
+      </div>
+      
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+        <span class="material-symbols-outlined text-primary text-4xl mb-4 block">3d_rotation</span>
+        <h3 class="text-xl font-bold mb-2">Real-time 3D Preview</h3>
+        <p class="text-gray-600 dark:text-gray-400">See your changes instantly in a fully navigable 3D environment.</p>
+      </div>
+      
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+        <span class="material-symbols-outlined text-primary text-4xl mb-4 block">palette</span>
+        <h3 class="text-xl font-bold mb-2">Customization</h3>
+        <p class="text-gray-600 dark:text-gray-400">Apply textures, materials, and colors to create your perfect design.</p>
+      </div>
+      
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+        <span class="material-symbols-outlined text-primary text-4xl mb-4 block">photo_camera</span>
+        <h3 class="text-xl font-bold mb-2">Photo Scanning</h3>
+        <p class="text-gray-600 dark:text-gray-400">Upload photos of existing spaces and automatically generate floor plans.</p>
+      </div>
+      
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+        <span class="material-symbols-outlined text-primary text-4xl mb-4 block">download</span>
+        <h3 class="text-xl font-bold mb-2">Export Options</h3>
+        <p class="text-gray-600 dark:text-gray-400">Export your projects in multiple formats for sharing and collaboration.</p>
+      </div>
+    </div>
+
+    <!-- Animated Module Integration -->
+    <section class="w-full mt-12 max-w-6xl mx-auto">
+      <h2 class="text-2xl font-bold mb-6 text-center">Responsive Module Showcase</h2>
+      <div class="animated-border-wrapper">
+        <div class="animated-border-container">
+          <div class="ab-background-img">
+            <div class="ab-box">
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+              <div class="ab-content">
+                <h2>My animated Border</h2>
+                <p><a>All our modules are designed to play nicely with responsive of course. At the end of the day it comes down to the theme you use - our code doesn't get in your way.</a></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Support matrix: the studio is desktop-first, so say so rather than let
+         a phone user find out by dragging on a plan that will not respond. -->
+    <section id="requirements" class="w-full mt-12 max-w-3xl mx-auto text-sm text-gray-600 dark:text-gray-300">
+      <h2 class="text-2xl font-bold mb-3 text-center text-gray-800 dark:text-gray-100">What you need</h2>
+      <ul class="list-disc pl-6 space-y-1">
+        <li><strong>Browser:</strong> the current desktop version of Chrome, Edge, Firefox or Safari (the last two releases).</li>
+        <li><strong>3D:</strong> WebGL 2, which every browser above ships; the WebGPU demo additionally needs Chrome 113+ or Edge 113+.</li>
+        <li><strong>Input:</strong> the studio is designed for a mouse and keyboard — drawing, dragging and orbiting use a pointer.</li>
+        <li><strong>Screen:</strong> at least 1024 px wide for the studio; the suites, calculators and price book work on narrower windows.</li>
+        <li><strong>Storage:</strong> projects and designs are saved in this browser's local storage, so clearing site data removes them — export a project to keep it.</li>
+      </ul>
+    </section>
+
+    <div class="text-center mt-12">
+      <button data-go="Editor.html" class="bg-primary text-white px-8 py-3 rounded-lg font-bold hover:opacity-90 transition-opacity">
+        Try It Now
+      </button>
+    </div>
+  </main>
+
+  <script type="importmap">
+    {
+        "imports": {
+            "three": "/vendor/three/three.module.js",
+            "three/addons/": "/vendor/three/addons/",
+            "three/nodes": "/vendor/three/addons/nodes/Nodes.js",
+            "three-bvh-csg": "/vendor/three-bvh-csg/index.module.js",
+            "three-mesh-bvh": "/vendor/three-mesh-bvh/index.module.js"
+        }
+    }
+    </script>
+  <script type="module" src="../assets/page-scripts/features.js"></script>
+    <script type="module" src="../shared/site.js"></script>
+</body>
+</html>
+

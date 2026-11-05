@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <script src="../shared/error-reporting.js"></script>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project dashboard · every suite in one place</title>
+    <meta name="description" content="Every suite's saved design, cost and status for one project on a single dashboard.">
+    <link rel="canonical" href="https://dev-justin-time.github.io/floorplan_3d/pages/project-dashboard.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Floorplan 3D">
+    <meta property="og:title" content="Project dashboard · every suite in one place">
+    <meta property="og:description" content="Every suite's saved design, cost and status for one project on a single dashboard.">
+    <meta property="og:url" content="https://dev-justin-time.github.io/floorplan_3d/pages/project-dashboard.html">
+    <meta property="og:image" content="../assets/images/hero-plan-1.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Project dashboard · every suite in one place">
+    <meta name="twitter:description" content="Every suite's saved design, cost and status for one project on a single dashboard.">
+    <meta name="twitter:image" content="../assets/images/hero-plan-1.png">
+<link rel="stylesheet" href="../assets/tailwind.css">
+    <style>
+        html, body { margin: 0; min-height: 100%; background: #f8fafc; }
+        body { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    </style>
+</head>
+<body class="min-h-full text-slate-800">
+<div class="min-h-screen flex flex-col">
+    <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-2.5">
+            <div class="flex min-w-0 items-baseline gap-3">
+                <h1 class="text-base font-bold whitespace-nowrap">Project dashboard</h1>
+                <span class="truncate text-[11px] text-slate-500">Every suite's open design and its priced takeoff</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-[11px] font-semibold">
+                <a href="Editor.html" class="rounded border border-slate-200 px-2 py-1 hover:bg-slate-50">Editor</a>
+                <a href="bid-builder.html" class="rounded border border-slate-200 px-2 py-1 hover:bg-slate-50">Bid builder</a>
+                <a href="price-book.html" class="rounded border border-slate-200 px-2 py-1 hover:bg-slate-50">Price book</a>
+                <button id="refresh-dashboard" class="rounded bg-slate-900 px-2.5 py-1 text-white hover:bg-slate-700">Refresh</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="mx-auto w-full max-w-7xl flex-1 px-4 py-4">
+        <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm" aria-label="Construction flow">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                    <h2 class="text-sm font-bold">Construction flow · one project, one floorplan</h2>
+                    <p class="text-[11px] text-slate-500">Start at 01 Floorplan in the Editor — every suite below stacks onto that plan. Green = started, grey = next.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="open-project-3d" class="rounded-lg bg-slate-900 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-slate-700">⬢ Open project 3D</button>
+                    <a href="Editor.html" class="rounded-lg border border-slate-200 px-3 py-1.5 text-[11px] font-bold hover:bg-slate-50">01 · Start the floorplan</a>
+                </div>
+            </div>
+            <div id="project-workflow" class="mt-2"></div>
+            <p id="flow-next" class="mt-1 text-[11px] font-mono text-slate-500"></p>
+        </section>
+        <section class="mt-3 grid grid-cols-1 gap-2 lg:grid-cols-2">
+            <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <h2 class="text-sm font-bold">Plan creation checklist</h2>
+                <ol id="plan-checklist" class="mt-2 space-y-1 text-[11px] text-slate-600 list-decimal pl-5"></ol>
+            </div>
+            <div class="rounded-xl border border-slate-900 bg-slate-900 p-4 shadow-sm text-slate-200">
+                <h2 class="text-sm font-bold text-white">Integrated 3D · what you get</h2>
+                <ul class="mt-2 space-y-1 text-[11px] leading-snug">
+                    <li>⬢ Same main floorplan everywhere — the viewer reads the Editor autosave.</li>
+                    <li>▦ Layer chips toggle framing, roof, plumbing, electrical and deck.</li>
+                    <li>✈ Drag to orbit, wheel to zoom, right-drag to pan.</li>
+                    <li>▸ Each suite page has the same flow strip + Project 3D button.</li>
+                </ul>
+            </div>
+        </section>
+        <section class="grid grid-cols-2 gap-2 lg:grid-cols-4 mt-3" aria-label="Project totals">
+            <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                <p class="text-[10px] uppercase tracking-wider font-bold text-slate-400">Priced takeoff</p>
+                <p id="dashboard-total" class="mt-1 text-2xl font-mono font-semibold text-slate-900">$0.00</p>
+                <p class="text-[10px] text-slate-400">Sum of every suite subtotal</p>
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                <p class="text-[10px] uppercase tracking-wider font-bold text-slate-400">Open designs</p>
+                <p id="dashboard-open" class="mt-1 text-2xl font-mono font-semibold text-slate-900">0/0</p>
+                <p class="text-[10px] text-slate-400">Suites with a saved draft</p>
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                <p class="text-[10px] uppercase tracking-wider font-bold text-slate-400">Priced lines</p>
+                <p id="dashboard-lines" class="mt-1 text-2xl font-mono font-semibold text-slate-900">0</p>
+                <p class="text-[10px] text-slate-400">Across the harvested takeoffs</p>
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                <p class="text-[10px] uppercase tracking-wider font-bold text-slate-400">Unpriced designs</p>
+                <p id="dashboard-unpriced" class="mt-1 text-2xl font-mono font-semibold text-slate-900">0</p>
+                <p class="text-[10px] text-slate-400">Open, but without a dollar total</p>
+            </div>
+        </section>
+
+        <section class="mt-5" aria-labelledby="suite-designs-heading">
+            <div class="flex flex-wrap items-end justify-between gap-2">
+                <div>
+                    <h2 id="suite-designs-heading" class="text-sm font-bold">Suite designs</h2>
+                    <p id="dashboard-progress" class="text-[11px] text-slate-500">Reading the saved designs…</p>
+                </div>
+                <p id="dashboard-generated" class="font-mono text-[10px] text-slate-400"></p>
+            </div>
+            <div id="suite-grid" class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3"></div>
+        </section>
+
+        <p class="mt-4 max-w-3xl text-[10px] leading-snug text-slate-400">
+            Designs are read from this browser's saved drafts. A suite with no saved design still opens on its own defaults; start it from the card. Stair quantities have no priced takeoff yet, so they are listed as unpriced.
+            <a href="bid-builder.html" class="underline hover:text-slate-600">Build the priced package</a>.
+        </p>
+        <p id="dashboard-status" class="mt-1 min-h-[1rem] text-[10px] text-emerald-700"></p>
+    </main>
+</div>
+
+<script type="module" src="../features/dashboard/page.js"></script>
+    <script type="module" src="../assets/page-scripts/project-dashboard.js"></script>
+    <script type="module" src="../shared/site.js"></script>
+</body>
+</html>

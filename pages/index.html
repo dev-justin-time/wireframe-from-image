@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <script src="../shared/error-reporting.js"></script>
+
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Floorplan 3D - AI-Powered Interior Design Platform</title>
+    <meta name="description" content="Transform 2D blueprints into immersive 3D walkthroughs instantly. The professional floorplan editor for architects, designers, and homeowners.">
+    <link rel="canonical" href="https://dev-justin-time.github.io/floorplan_3d/pages/index.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Floorplan 3D">
+    <meta property="og:title" content="Floorplan 3D - AI-Powered Interior Design Platform">
+    <meta property="og:description" content="Transform 2D blueprints into immersive 3D walkthroughs instantly. The professional floorplan editor for architects, designers, and homeowners.">
+    <meta property="og:url" content="https://dev-justin-time.github.io/floorplan_3d/pages/index.html">
+    <meta property="og:image" content="../assets/images/hero-plan-1.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Floorplan 3D - AI-Powered Interior Design Platform">
+    <meta name="twitter:description" content="Transform 2D blueprints into immersive 3D walkthroughs instantly. The professional floorplan editor for architects, designers, and homeowners.">
+    <meta name="twitter:image" content="../assets/images/hero-plan-1.png">
+<link rel="stylesheet" href="../assets/tailwind.css">
+    <link rel="stylesheet" href="../assets/fonts/fonts.css">
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.6);
+            transform: scale(0);
+            animation: ripple-animation 0.6s ease-out;
+            pointer-events: none;
+        }
+        @keyframes ripple-animation {
+            to { transform: scale(4); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="font-display bg-background-light dark:bg-background-dark text-gray-800 dark:text-gray-200">
+<div class="relative flex min-h-screen w-full flex-col">
+    
+    <!-- TopNavBar -->
+    <header class="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
+        <nav class="container mx-auto flex items-center justify-between whitespace-nowrap px-6 py-4">
+            <div class="flex items-center gap-4 text-gray-900 dark:text-white">
+                <span class="material-symbols-outlined text-primary text-3xl">view_in_ar</span>
+                <h2 class="text-xl font-bold tracking-[-0.015em]">Floorplan 3D</h2>
+            </div>
+            <div class="hidden md:flex flex-1 justify-center gap-8">
+                <a class="text-sm font-medium hover:text-primary transition-colors" href="features.html">Features</a>
+                <a class="text-sm font-medium hover:text-primary transition-colors" href="pricing.html">Pricing</a>
+                <a class="text-sm font-medium hover:text-primary transition-colors" href="Editor.html">Studio</a>
+            </div>
+            <div class="flex gap-2">
+                <button data-go="Editor.html" class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary/20 text-primary dark:bg-primary/30 dark:text-primary text-sm font-bold tracking-[0.015em] hover:bg-primary/30 dark:hover:bg-primary/40 transition-colors">
+                    <span class="truncate">Log In</span>
+                </button>
+                <button data-go="Editor.html" class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold tracking-[0.015em] hover:opacity-90 transition-opacity">
+                    <span class="truncate">Sign Up</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto flex h-full grow flex-col items-center px-6 py-12 md:py-20 lg:py-24">
+        <div class="flex flex-col max-w-6xl w-full">
+            
+            <!-- HeroSection -->
+            <section class="w-full">
+                <div class="@container">
+                    <div class="flex flex-col items-center gap-10 @[960px]:flex-row @[960px]:gap-12">
+                        <div class="flex flex-col gap-6 text-center @[960px]:text-left @[960px]:w-2/5">
+                            <div class="flex flex-col gap-4">
+                                <h1 class="text-4xl font-black leading-tight tracking-tighter @[480px]:text-5xl lg:text-6xl text-gray-900 dark:text-white">
+                                    Bring Your Floorplans to Life in Interactive 3D
+                                </h1>
+                                <h2 class="text-base font-normal leading-normal @[480px]:text-lg text-gray-600 dark:text-gray-400">
+                                    Upload any 2D floorplan and instantly generate a fully navigable, detailed 3D model and 360° panorama.
+                                </h2>
+                            </div>
+                            <div class="flex flex-wrap gap-3 justify-center @[960px]:justify-start">
+                                <button data-clicks="#floorplan-upload" class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-primary text-white text-base font-bold tracking-[0.015em] hover:opacity-90 transition-opacity gap-2">
+                                    <span class="material-symbols-outlined text-xl">upload_file</span>
+                                    <span class="truncate">Try it Now</span>
+                                </button>
+                                <button data-go="demo.html" class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-gray-200 text-gray-800 dark:bg-gray-800 dark:text-white text-base font-bold tracking-[0.015em] hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors">
+                                    <span class="truncate">Explore Demo</span>
+                                </button>
+                                <button id="load-demo-plan" type="button" class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-emerald-600 text-white text-base font-bold tracking-[0.015em] hover:opacity-90 transition-opacity gap-2" title="Load the Southern Farmhouse demo plan into every page">
+                                    <span class="material-symbols-outlined text-xl">cottage</span>
+                                    <span class="truncate">Farmhouse Demo</span>
+                                </button>
+                                <button id="create-new-plan" type="button" class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-transparent border-2 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-white text-base font-bold tracking-[0.015em] hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors gap-2" title="Start with a blank plan">
+                                    <span class="material-symbols-outlined text-xl">add_box</span>
+                                    <span class="truncate">Create New</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="w-full @[960px]:w-3/5">
+                            <div class="relative w-full aspect-video rounded-xl shadow-2xl shadow-primary/20 dark:shadow-primary/10 overflow-hidden border border-gray-200 dark:border-gray-800 group">
+                                <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style='background-image: url("../assets/images/hero-plan-1.png");'></div>
+                                <div class="absolute bottom-4 left-4 h-1/3 w-1/3 min-w-32 min-h-32 bg-background-light dark:bg-background-dark p-2 rounded-lg border-2 border-primary shadow-lg backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90">
+                                    <div class="w-full h-full bg-contain bg-center bg-no-repeat" style='background-image: url("../assets/images/hero-plan-2.png");'></div>
+                                </div>
+                                <div class="absolute top-4 right-4 flex items-center gap-2 p-2 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-sm rounded-full text-xs font-semibold border border-gray-200 dark:border-gray-700">
+                                    <span class="material-symbols-outlined text-base text-primary">3d_rotation</span>
+                                    <span>Live WebGL Demo</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- NEW: Interactive Floorplan to 3D Pipeline Demo -->
+            <section class="w-full mt-16 md:mt-24" id="demo-section">
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 md:p-8 border border-gray-200 dark:border-gray-700 shadow-xl">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+                        <div>
+                            <h2 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Interactive Conversion Pipeline</h2>
+                            <p class="text-gray-600 dark:text-gray-400 mt-1">Upload a 2D blueprint to instantly generate a navigable 3D space and panorama.</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <!-- Appears once a plan converts: takes the walls into the studio editor. -->
+                            <button id="edit-in-studio" type="button" class="hidden items-center gap-2 px-5 py-3 rounded-lg font-bold border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title="Open the converted plan in the studio to add walls, openings and items">
+                                <span class="material-symbols-outlined">edit_square</span>
+                                <span>Edit in Studio</span>
+                            </button>
+                            <button id="pipeline-demo" type="button" class="flex items-center gap-2 px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold transition-all" title="Load the Southern Farmhouse demo into the viewer">
+                                <span class="material-symbols-outlined">cottage</span>
+                                <span>Farmhouse Demo</span>
+                            </button>
+                            <button id="pipeline-new" type="button" class="flex items-center gap-2 px-5 py-3 rounded-lg font-bold border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title="Clear the plan and start blank in the Studio">
+                                <span class="material-symbols-outlined">add_box</span>
+                                <span>Create New</span>
+                            </button>
+                            <label class="flex items-center gap-2 px-5 py-3 bg-primary hover:bg-primary/90 text-white rounded-lg font-bold cursor-pointer transition-all shadow-lg shadow-primary/20">
+                                <span class="material-symbols-outlined">upload_file</span>
+                                <span>Upload Floorplan</span>
+                                <input type="file" id="floorplan-upload" accept="image/png, image/jpeg" class="hidden" />
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Processing State (Hidden by default) -->
+                    <div id="processing-state" class="hidden flex-col items-center justify-center py-16 bg-gray-50 dark:bg-gray-900/50 rounded-lg border-2 border-dashed border-primary/30">
+                        <div class="relative w-16 h-16 mb-4">
+                            <div class="absolute inset-0 border-4 border-primary/20 rounded-full"></div>
+                            <div class="absolute inset-0 border-4 border-primary rounded-full border-t-transparent animate-spin"></div>
+                            <span class="material-symbols-outlined absolute inset-0 flex items-center justify-center text-primary text-2xl">architecture</span>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white" id="processing-text">Analyzing floorplan geometry...</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Running Canny edge detection and vectorization</p>
+                    </div>
+
+                    <!-- Viewer Container -->
+                    <div id="viewer-wrapper" class="relative w-full h-[500px] bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                        
+                        <!-- Default Placeholder -->
+                        <div id="viewer-placeholder" class="absolute inset-0 flex flex-col items-center justify-center text-gray-400 dark:text-gray-600">
+                            <span class="material-symbols-outlined text-6xl mb-4 opacity-50">view_in_ar</span>
+                            <p class="text-lg font-medium">Upload a floorplan to see the magic happen</p>
+                            <p class="text-sm opacity-70">Supports JPG, PNG (Max 10MB)</p>
+                        </div>
+
+                        <!-- The 3D/Panorama Viewer -->
+                        <div id="shared-viewer-container" class="hidden absolute inset-0 w-full h-full">
+                            <canvas id="viewer-panorama-canvas" class="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing"></canvas>
+                            <div id="viewer-3d-view" class="absolute inset-0 w-full h-full hidden"></div>
+                            
+                            <!-- Viewer Controls Overlay -->
+                            <div class="absolute top-4 right-4 flex items-center gap-3 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md p-2 rounded-full shadow-lg border border-gray-200 dark:border-gray-700">
+                                <span class="text-xs font-bold text-gray-500 dark:text-gray-400 px-2">PANORAMA</span>
+                                <label class="relative inline-flex cursor-pointer items-center">
+                                    <input class="peer sr-only" type="checkbox" id="viewer-toggle" />
+                                    <div class="peer h-6 w-11 rounded-full bg-gray-300 dark:bg-gray-600 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all peer-checked:bg-primary peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
+                                </label>
+                                <span class="text-xs font-bold text-gray-900 dark:text-white px-2">3D MODEL</span>
+                            </div>
+
+                            <!-- Stats Overlay -->
+                            <div class="absolute bottom-4 left-4 flex gap-2">
+                                <div class="bg-black/60 backdrop-blur-md text-white text-xs px-3 py-1.5 rounded-md flex items-center gap-2 border border-white/10">
+                                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                                    <span id="stats-walls">0 Walls Detected</span>
+                                </div>
+                                <div class="bg-black/60 backdrop-blur-md text-white text-xs px-3 py-1.5 rounded-md flex items-center gap-2 border border-white/10">
+                                    <span class="material-symbols-outlined text-sm">speed</span>
+                                    <span id="stats-time">0ms Processing</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FeatureSection -->
+            <section class="w-full mt-24 md:mt-32">
+                <div class="flex flex-col gap-10">
+                    <div class="flex flex-col gap-4 text-center items-center">
+                        <h1 class="text-3xl font-bold tracking-tight @[480px]:text-4xl max-w-2xl text-gray-900 dark:text-white">
+                            Transform Your Designs with Powerful Features
+                        </h1>
+                        <p class="text-base font-normal leading-normal max-w-3xl text-gray-600 dark:text-gray-400">
+                            Our intelligent platform provides instant, high-fidelity 3D models from any 2D drawing, ensuring a seamless and secure workflow.
+                        </p>
+                    </div>
+                    <div class="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-6 p-0">
+                        <div class="flex flex-1 gap-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-background-dark p-6 flex-col hover:border-primary/50 transition-colors">
+                            <span class="material-symbols-outlined text-primary text-3xl">auto_awesome</span>
+                            <div class="flex flex-col gap-1">
+                                <h2 class="text-lg font-bold text-gray-900 dark:text-white">AI-Powered Conversion</h2>
+                                <p class="text-sm font-normal leading-normal text-gray-600 dark:text-gray-400">
+                                    Intelligent algorithms accurately interpret your floorplans for quick and precise 3D model generation.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex flex-1 gap-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-background-dark p-6 flex-col hover:border-primary/50 transition-colors">
+                            <span class="material-symbols-outlined text-primary text-3xl">3d_rotation</span>
+                            <div class="flex flex-col gap-1">
+                                <h2 class="text-lg font-bold text-gray-900 dark:text-white">Real-time Rendering</h2>
+                                <p class="text-sm font-normal leading-normal text-gray-600 dark:text-gray-400">
+                                    Instantly explore and interact with your designs in a smooth, navigable 3D environment.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex flex-1 gap-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-background-dark p-6 flex-col hover:border-primary/50 transition-colors">
+                            <span class="material-symbols-outlined text-primary text-3xl">devices</span>
+                            <div class="flex flex-col gap-1">
+                                <h2 class="text-lg font-bold text-gray-900 dark:text-white">Cross-Platform</h2>
+                                <p class="text-sm font-normal leading-normal text-gray-600 dark:text-gray-400">
+                                    Access and share your 3D models on any device, from desktop browsers to mobile platforms.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex flex-1 gap-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-background-dark p-6 flex-col hover:border-primary/50 transition-colors">
+                            <span class="material-symbols-outlined text-primary text-3xl">verified_user</span>
+                            <div class="flex flex-col gap-1">
+                                <h2 class="text-lg font-bold text-gray-900 dark:text-white">Secure & Compliant</h2>
+                                <p class="text-sm font-normal leading-normal text-gray-600 dark:text-gray-400">
+                                    Your data is protected with international compliance standards for security and privacy.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CTASection -->
+            <section class="w-full mt-24 md:mt-32">
+                <div class="rounded-xl bg-primary/10 dark:bg-primary/20 border border-primary/20">
+                    <div class="flex flex-col items-center gap-6 px-4 py-16 text-center @[480px]:gap-8 @[480px]:px-10 @[480px]:py-20">
+                        <div class="flex flex-col gap-3">
+                            <h1 class="text-3xl font-bold tracking-tight @[480px]:text-4xl max-w-2xl text-gray-900 dark:text-white">
+                                Ready to Visualize Your Space?
+                            </h1>
+                            <p class="text-base font-normal leading-normal max-w-2xl text-gray-600 dark:text-gray-300">
+                                Get started today by uploading your first floorplan. It's fast, easy, and free to try.
+                            </p>
+                        </div>
+                        <div class="flex justify-center">
+                            <button data-clicks="#floorplan-upload" class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-primary text-white text-base font-bold tracking-[0.015em] hover:opacity-90 transition-opacity gap-2">
+                                <span class="material-symbols-outlined text-xl">rocket_launch</span>
+                                <span class="truncate">Launch Editor</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full border-t border-gray-200 dark:border-gray-800 mt-24 md:mt-32">
+        <div class="container mx-auto flex flex-col items-center gap-8 px-6 py-10 text-center">
+            <div class="flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
+                <a class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-primary transition-colors" href="#">Privacy Policy</a>
+                <a class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-primary transition-colors" href="#">Terms of Service</a>
+                <a class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-primary transition-colors" href="contact.html">Contact</a>
+                <button id="quicklinks-btn" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-primary transition-colors">Quick Links</button>
+            </div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">© 2024 Floorplan 3D. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Quick Links Modal -->
+    <div id="quicklinks-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-background-dark rounded-xl shadow-2xl max-w-md w-full p-6 relative border border-gray-200 dark:border-gray-700">
+            <button id="close-modal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Quick Links</h3>
+            <nav class="flex flex-col gap-3">
+                <a href="demo.html" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group">
+                    <span class="material-symbols-outlined text-primary">3d_rotation</span>
+                    <span class="text-gray-900 dark:text-white font-medium">3D Demo</span>
+                </a>
+                <a href="Editor.html" class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group">
+                    <span class="material-symbols-outlined text-primary">draw</span>
+                    <span class="text-gray-900 dark:text-white font-medium">Blueprint Editor</span>
+                </a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Import Map for Three.js -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "/vendor/three/three.module.js",
+            "three/addons/": "/vendor/three/addons/",
+            "three/nodes": "/vendor/three/addons/nodes/Nodes.js",
+            "three-bvh-csg": "/vendor/three-bvh-csg/index.module.js",
+            "three-mesh-bvh": "/vendor/three-mesh-bvh/index.module.js"
+        }
+    }
+    </script>
+
+    <!-- Core Application Logic -->
+    <script type="module" src="../assets/page-scripts/index.js"></script>
+</div>
+    <script type="module" src="../shared/site.js"></script>
+</body>
+</html>

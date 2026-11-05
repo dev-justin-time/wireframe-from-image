@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+    <script src="../shared/error-reporting.js"></script>
+
+  <meta content="width=device-width, initial-scale=1" name="viewport">
+  <title>WebGPU Demo - Floorplan 3D</title>
+  <meta name="description" content="A WebGPU rendering demo of the floor plan viewer.">
+  <link rel="canonical" href="https://dev-justin-time.github.io/floorplan_3d/pages/webgpu-demo.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Floorplan 3D">
+  <meta property="og:title" content="WebGPU Demo - Floorplan 3D">
+  <meta property="og:description" content="A WebGPU rendering demo of the floor plan viewer.">
+  <meta property="og:url" content="https://dev-justin-time.github.io/floorplan_3d/pages/webgpu-demo.html">
+  <meta property="og:image" content="../assets/images/hero-plan-1.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="WebGPU Demo - Floorplan 3D">
+  <meta name="twitter:description" content="A WebGPU rendering demo of the floor plan viewer.">
+  <meta name="twitter:image" content="../assets/images/hero-plan-1.png">
+  <script type="importmap">
+    {
+        "imports": {
+            "three": "/vendor/three/three.module.js",
+            "three/addons/": "/vendor/three/addons/",
+            "three/nodes": "/vendor/three/addons/nodes/Nodes.js",
+            "three-bvh-csg": "/vendor/three-bvh-csg/index.module.js",
+            "three-mesh-bvh": "/vendor/three-mesh-bvh/index.module.js"
+        }
+    }
+    </script>
+  <style>
+    html, body { height: 100%; margin: 0; background: #101c22; color: white; font-family: system-ui; overflow: hidden; }
+    #info { position: absolute; top: 20px; left: 20px; z-index: 10; pointer-events: none; }
+    h1 { margin: 0 0 10px 0; font-size: 1.5rem; }
+    p { margin: 0; opacity: 0.8; }
+    a.button { position: absolute; bottom: 30px; right: 30px; display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; border-radius: 8px; background: #13a4ec; color: #fff; text-decoration: none; font-weight: 600; pointer-events: auto; transition: opacity 0.2s; }
+    a.button:hover { opacity: 0.9; }
+    #canvas-container { width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+  <div id="info">
+    <h1>WebGPU Renderer Test</h1>
+    <p>Experimental backend. Requires compatible browser.</p>
+  </div>
+  
+  <div id="canvas-container"></div>
+  <a class="button" href="index.html">Back to Home</a>
+
+  <script type="module" src="../assets/page-scripts/webgpu-demo.js"></script>
+    <script type="module" src="../shared/site.js"></script>
+</body>
+</html>
+

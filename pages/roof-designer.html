@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <script src="../shared/error-reporting.js"></script>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roof suite · truss designer and takeoff</title>
+    <meta name="description" content="Design a truss or rafter roof with pitch, span, battens and covering, and take off the materials.">
+    <link rel="canonical" href="https://dev-justin-time.github.io/floorplan_3d/pages/roof-designer.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Floorplan 3D">
+    <meta property="og:title" content="Roof suite · truss designer and takeoff">
+    <meta property="og:description" content="Design a truss or rafter roof with pitch, span, battens and covering, and take off the materials.">
+    <meta property="og:url" content="https://dev-justin-time.github.io/floorplan_3d/pages/roof-designer.html">
+    <meta property="og:image" content="../assets/images/hero-plan-1.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Roof suite · truss designer and takeoff">
+    <meta name="twitter:description" content="Design a truss or rafter roof with pitch, span, battens and covering, and take off the materials.">
+    <meta name="twitter:image" content="../assets/images/hero-plan-1.png">
+<link rel="stylesheet" href="../assets/tailwind.css">
+    <style>
+        html, body { margin: 0; height: 100%; overflow: hidden; background: #f8fafc; }
+        input[type="range"] { accent-color: #0ea5e9; }
+        input[readonly] { background: #f1f5f9; color: #475569; }
+        canvas { display: block; }
+        #elevation { width: 100%; height: 100%; }
+        #stage { width: 100%; height: 100%; }
+        #stage canvas { display: block; width: 100% !important; height: 100% !important; }
+        .style-card.active { border-color: #0284c7; background: #f0f9ff; box-shadow: 0 0 0 1px #0284c7 inset; }
+        .severity-ok { color: #15803d; }
+        .severity-info { color: #475569; }
+        .severity-warn { color: #b45309; }
+        .severity-error { color: #dc2626; }
+        .tab.active { background: #0f172a; color: white; }
+        th { position: sticky; top: 0; background: #f8fafc; }
+    </style>
+</head>
+<body class="h-full text-slate-800">
+<div class="h-full flex flex-col">
+    <header class="flex items-center justify-between gap-3 px-4 py-2 bg-white border-b border-slate-200">
+        <div class="flex items-baseline gap-3 min-w-0">
+            <h1 class="text-base font-bold whitespace-nowrap">Roof suite</h1>
+            <span class="text-[11px] text-slate-500 truncate">10 truss styles · sheathing, underlayment, shingles or tile · rain gutters · takeoff</span>
+        </div>
+        <div class="flex items-center gap-2 text-[11px] font-semibold shrink-0">
+            <a href="Editor.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Editor</a>
+            <a href="framing-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Framing</a>
+            <a href="plumbing-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Plumbing</a>
+            <a href="stair-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Stairs</a>
+            <a href="landscape-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Landscape</a>
+            <a href="deck-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Deck</a>
+            <a href="electrical-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Electrical</a>
+            <a href="bid-builder.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Bid</a>
+            <a href="../docs/ROOF.MD" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50" title="Roof rules and regulations for every concern">Rules</a>
+            <button id="reset" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Reset</button>
+            <button id="download-csv" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Takeoff CSV</button>
+            <button id="send-editor" class="px-2 py-1 rounded bg-sky-600 text-white hover:bg-sky-700">Send to editor</button>
+        </div>
+    </header>
+
+    <main class="flex-1 min-h-0 flex">
+        <aside class="w-[382px] shrink-0 overflow-y-auto bg-white border-r border-slate-200 p-4 space-y-4">
+            <section>
+                <div class="flex items-baseline justify-between">
+                    <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">Truss style</h2>
+                    <span id="style-count" class="text-[10px] font-mono text-slate-400">10</span>
+                </div>
+                <div id="roof-style-grid" class="grid grid-cols-2 gap-1.5 mt-2"></div>
+                <p id="style-note" class="text-[10px] text-slate-500 leading-snug mt-2"></p>
+            </section>
+
+            <section>
+                <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-2">Geometry</h2>
+                <div class="space-y-2.5">
+                    <label class="block text-[11px] text-slate-500">
+                        <span class="flex justify-between"><span>Span</span><b id="span-label" class="text-slate-800">10.00 m</b></span>
+                        <div class="flex items-center gap-2 mt-0.5">
+                            <input type="range" id="span" min="4" max="20" step="0.1" value="10" class="flex-1">
+                            <input type="number" id="span-number" min="4" max="20" step="0.1" value="10" class="w-20 rounded border border-slate-200 px-1 py-0.5 font-mono text-[11px]">
+                        </div>
+                    </label>
+                    <label class="block text-[11px] text-slate-500">
+                        <span class="flex justify-between"><span>Length</span><b id="length-label" class="text-slate-800">14.00 m</b></span>
+                        <div class="flex items-center gap-2 mt-0.5">
+                            <input type="range" id="length" min="4" max="30" step="0.1" value="14" class="flex-1">
+                            <input type="number" id="length-number" min="4" max="30" step="0.1" value="14" class="w-20 rounded border border-slate-200 px-1 py-0.5 font-mono text-[11px]">
+                        </div>
+                    </label>
+                    <label class="block text-[11px] text-slate-500">
+                        <span class="flex justify-between"><span>Pitch</span><b id="pitch-label" class="text-slate-800">6.00:12</b></span>
+                        <div class="flex items-center gap-2 mt-0.5">
+                            <input type="range" id="pitch" min="0.5" max="16" step="0.25" value="6" class="flex-1">
+                            <input type="number" id="pitch-number" min="0.5" max="16" step="0.25" value="6" class="w-20 rounded border border-slate-200 px-1 py-0.5 font-mono text-[11px]">
+                        </div>
+                        <span id="pitch-angle" class="text-[10px] text-slate-400">26.6° slope factor 1.118</span>
+                    </label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="block text-[11px] text-slate-500">Overhang (m)
+                            <input type="number" id="overhang" min="0" max="1.5" step="0.05" value="0.5" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 font-mono text-[11px]">
+                        </label>
+                        <label class="block text-[11px] text-slate-500">Truss spacing
+                            <select id="spacing" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 text-[11px]">
+                                <option value="0.4">16 in · 406 mm</option>
+                                <option value="0.61" selected>24 in · 610 mm</option>
+                            </select>
+                        </label>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-2">Roof layers</h2>
+                <label class="block text-[11px] text-slate-500">Covering
+                    <select id="covering" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 text-[11px]"></select>
+                </label>
+                <p id="covering-note" class="text-[10px] text-slate-400 leading-snug mt-1"></p>
+                <div class="grid grid-cols-2 gap-2 mt-2">
+                    <label class="block text-[11px] text-slate-500">Sheathing
+                        <select id="sheathing" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 text-[11px]"></select>
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Underlayment
+                        <select id="underlayment" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 text-[11px]"></select>
+                    </label>
+                </div>
+                <label class="mt-2 flex items-center gap-2 text-[11px] text-slate-600">
+                    <input type="checkbox" id="ice-shield" checked> Ice and water shield at the eaves
+                </label>
+            </section>
+
+            <section>
+                <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-2">Rain gutter</h2>
+                <label class="flex items-center gap-2 text-[11px] text-slate-600">
+                    <input type="checkbox" id="gutters" checked> Gutter package
+                </label>
+                <label class="block text-[11px] text-slate-500 mt-2">Profile
+                    <select id="gutter" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 text-[11px]"></select>
+                </label>
+                <p id="gutter-note" class="text-[10px] text-slate-400 leading-snug mt-1"></p>
+                <div class="grid grid-cols-2 gap-2 mt-2">
+                    <label class="block text-[11px] text-slate-500">Downspouts
+                        <input type="number" id="downspouts" min="0" max="12" step="1" placeholder="auto" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 font-mono text-[11px]">
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Waste %
+                        <input type="number" id="waste" min="0" max="40" step="1" value="10" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 font-mono text-[11px]">
+                    </label>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-2">Site and options</h2>
+                <label class="block text-[11px] text-slate-500">Climate
+                    <select id="climate" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 text-[11px]">
+                        <option value="moderate">Moderate</option>
+                        <option value="cold">Cold · snow</option>
+                        <option value="hail">Hail belt</option>
+                        <option value="warm">Warm · high wind</option>
+                    </select>
+                </label>
+                <div class="grid grid-cols-2 gap-x-2 gap-y-1 mt-2 text-[11px] text-slate-600">
+                    <label class="flex items-center gap-1.5"><input type="checkbox" id="ridge-vent" checked> Ridge vent</label>
+                    <label class="flex items-center gap-1.5"><input type="checkbox" id="soffit-vent" checked> Soffit vent</label>
+                    <label class="flex items-center gap-1.5"><input type="checkbox" id="chimney"> Chimney</label>
+                    <label class="flex items-center gap-1.5"><input type="checkbox" id="tear-off"> Tear-off</label>
+                </div>
+                <label class="block text-[11px] text-slate-500 mt-2">Vent pipes
+                    <input type="number" id="pipe-vents" min="0" max="8" step="1" value="2" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 font-mono text-[11px]">
+                </label>
+            </section>
+
+            <section class="rounded-lg border border-slate-200 p-3">
+                <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-2">Result</h2>
+                <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] font-mono">
+                    <span class="text-slate-500">Roof area</span><b id="roof-area" class="text-right">—</b>
+                    <span class="text-slate-500">Squares</span><b id="roof-squares" class="text-right">—</b>
+                    <span class="text-slate-500">Deck sheets</span><b id="roof-sheets" class="text-right">—</b>
+                    <span class="text-slate-500">Underlayment</span><b id="roof-rolls" class="text-right">—</b>
+                    <span class="text-slate-500">Covering</span><b id="roof-covering-qty" class="text-right">—</b>
+                    <span class="text-slate-500">Ridge / hip cap</span><b id="roof-cap" class="text-right">—</b>
+                    <span class="text-slate-500">Trusses</span><b id="roof-trusses" class="text-right">—</b>
+                    <span class="text-slate-500">Gutter</span><b id="roof-gutter" class="text-right">—</b>
+                    <span class="text-slate-500">Downspouts</span><b id="roof-downspouts" class="text-right">—</b>
+                    <span class="text-slate-500">Free vent area</span><b id="roof-vent" class="text-right">—</b>
+                </div>
+                <div class="mt-3 pt-2 border-t border-slate-100 flex items-baseline justify-between">
+                    <span class="text-[10px] uppercase tracking-wide text-slate-400">Estimate</span>
+                    <b id="roof-cost" class="text-base font-mono">—</b>
+                </div>
+                <p id="roof-cost-note" class="text-[10px] font-mono text-slate-400 text-right">—</p>
+                <p id="check-summary" class="text-[10px] font-mono mt-1">—</p>
+            </section>
+
+            <p class="text-[10px] text-slate-400 leading-snug">
+                Metric design aid. The truss style, pitch, covering and gutter are checked against each other; quantities include the waste allowance. Priced as illustrative material + labour, not a quote.
+                <a href="#reference" id="glossary-link" class="underline hover:text-sky-700">Glossary &amp; formulas</a> ·
+                <a href="../docs/ROOF.MD" class="underline hover:text-sky-700">Rules &amp; regulations</a>.
+            </p>
+            <p id="status" class="text-[10px] text-sky-700 min-h-[1rem]"></p>
+        </aside>
+
+        <div class="flex-1 min-w-0 flex flex-col">
+            <nav class="flex items-center gap-2 px-3 pt-3">
+                <button class="tab active px-3 py-1.5 rounded-lg text-[11px] font-bold border border-slate-200" data-tab="design">Design</button>
+                <button class="tab px-3 py-1.5 rounded-lg text-[11px] font-bold border border-slate-200 bg-white hover:bg-slate-50" data-tab="takeoff">Takeoff</button>
+                <button class="tab px-3 py-1.5 rounded-lg text-[11px] font-bold border border-slate-200 bg-white hover:bg-slate-50" data-tab="reference">Reference</button>
+                <span id="tab-note" class="text-[10px] text-slate-400 ml-auto pr-1">section and 3D share the design</span>
+            </nav>
+
+            <div id="panel-design" class="flex-1 min-h-0 flex flex-col">
+                <section class="flex-1 min-h-0 bg-white m-3 mb-0 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+                    <div class="flex items-center justify-between px-3 py-1.5 border-b border-slate-100">
+                        <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">Elevation</h2>
+                        <span class="text-[10px] text-slate-400">section through the ridge · layers called out</span>
+                    </div>
+                    <div class="flex-1 min-h-0 relative">
+                        <canvas id="elevation"></canvas>
+                    </div>
+                </section>
+                <section class="flex-1 min-h-0 bg-white m-3 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+                    <div class="flex items-center justify-between px-3 py-1.5 border-b border-slate-100">
+                        <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">3D</h2>
+                        <span class="text-[10px] text-slate-400">drag to orbit · scroll to zoom</span>
+                    </div>
+                    <div class="flex-1 min-h-0 relative">
+                        <div id="stage"></div>
+                    </div>
+                </section>
+            </div>
+
+            <div id="panel-takeoff" class="hidden flex-1 min-h-0 overflow-y-auto m-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+                <div class="px-4 py-3 grid grid-cols-2 md:grid-cols-4 gap-2 border-b border-slate-100">
+                    <div class="rounded-lg bg-slate-50 px-3 py-2">
+                        <p class="text-[10px] uppercase tracking-wide text-slate-400">Roof area</p>
+                        <p id="takeoff-area" class="text-sm font-bold font-mono">—</p>
+                    </div>
+                    <div class="rounded-lg bg-slate-50 px-3 py-2">
+                        <p class="text-[10px] uppercase tracking-wide text-slate-400">Squares</p>
+                        <p id="takeoff-squares" class="text-sm font-bold font-mono">—</p>
+                    </div>
+                    <div class="rounded-lg bg-slate-50 px-3 py-2">
+                        <p class="text-[10px] uppercase tracking-wide text-slate-400">Material</p>
+                        <p id="takeoff-material" class="text-sm font-bold font-mono">—</p>
+                    </div>
+                    <div class="rounded-lg bg-slate-50 px-3 py-2">
+                        <p class="text-[10px] uppercase tracking-wide text-slate-400">Total</p>
+                        <p id="takeoff-total" class="text-sm font-bold font-mono">—</p>
+                    </div>
+                </div>
+                <div class="px-4 py-3 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div>
+                        <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-1">Bill of materials</h2>
+                        <div class="rounded-lg border border-slate-200 overflow-hidden">
+                            <table class="w-full text-[11px]">
+                                <thead>
+                                    <tr class="text-left text-slate-400">
+                                        <th class="px-2 py-1 font-semibold">Item</th>
+                                        <th class="px-2 py-1 font-semibold text-right">Qty</th>
+                                        <th class="px-2 py-1 font-semibold">Unit</th>
+                                        <th class="px-2 py-1 font-semibold text-right">Cost</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="roof-takeoff-body"></tbody>
+                            </table>
+                        </div>
+                        <div class="mt-2 flex items-center justify-between text-[11px] font-mono">
+                            <span class="text-slate-500">Labour</span><b id="takeoff-labour">—</b>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1">Tear-off, install, flashing and gutter labour; material rows include the waste allowance.</p>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">Checks</h2>
+                            <span id="check-counts" class="text-[10px] font-mono text-slate-400">—</span>
+                        </div>
+                        <ul id="roof-checks" class="space-y-1 text-[11px] leading-snug"></ul>
+                        <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mt-3 mb-1">Ventilation and water</h2>
+                        <div id="roof-water" class="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] font-mono"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="panel-reference" class="hidden flex-1 min-h-0 overflow-y-auto m-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+                <div class="px-4 py-3 border-b border-slate-100 sticky top-0 bg-white z-10">
+                    <div class="flex items-center justify-between gap-3">
+                        <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">Roof glossary</h2>
+                        <input id="glossary-search" type="search" placeholder="Search a term…" class="w-56 rounded border border-slate-200 px-2 py-1 text-[11px]">
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-1">Structural, waterproofing, shingles, installation, insurance and the terms the takeoff uses. <span id="glossary-count" class="font-mono">—</span></p>
+                </div>
+                <div id="roof-glossary" class="px-4 py-3 grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
+                <div class="px-4 pb-4">
+                    <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-1">Formulas</h2>
+                    <div class="rounded-lg border border-slate-200 overflow-hidden">
+                        <table class="w-full text-[11px]">
+                            <thead><tr class="text-left text-slate-400"><th class="px-2 py-1">Quantity</th><th class="px-2 py-1">Formula</th><th class="px-2 py-1">Note</th></tr></thead>
+                            <tbody id="roof-formulas"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script type="importmap">
+    {
+        "imports": {
+            "three": "/vendor/three/three.module.js",
+            "three/addons/": "/vendor/three/addons/",
+            "three/nodes": "/vendor/three/addons/nodes/Nodes.js",
+            "three-bvh-csg": "/vendor/three-bvh-csg/index.module.js",
+            "three-mesh-bvh": "/vendor/three-mesh-bvh/index.module.js"
+        }
+    }
+    </script>
+<script type="module" src="../assets/page-scripts/roof-designer.js"></script>
+    <script type="module" src="../shared/site.js"></script>
+</body>
+</html>

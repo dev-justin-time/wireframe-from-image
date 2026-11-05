@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <script src="../shared/error-reporting.js"></script>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bid builder · one costed package from every suite</title>
+    <meta name="description" content="Build one costed bid from every suite's saved design, with labour, materials, tax and a client-ready proposal.">
+    <link rel="canonical" href="https://dev-justin-time.github.io/floorplan_3d/pages/bid-builder.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Floorplan 3D">
+    <meta property="og:title" content="Bid builder · one costed package from every suite">
+    <meta property="og:description" content="Build one costed bid from every suite's saved design, with labour, materials, tax and a client-ready proposal.">
+    <meta property="og:url" content="https://dev-justin-time.github.io/floorplan_3d/pages/bid-builder.html">
+    <meta property="og:image" content="../assets/images/hero-plan-1.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Bid builder · one costed package from every suite">
+    <meta name="twitter:description" content="Build one costed bid from every suite's saved design, with labour, materials, tax and a client-ready proposal.">
+    <meta name="twitter:image" content="../assets/images/hero-plan-1.png">
+<link rel="stylesheet" href="../assets/tailwind.css">
+    <style>
+        html, body { margin: 0; height: 100%; overflow: hidden; background: #f8fafc; }
+        .tab.active { background: #0f172a; color: white; }
+        .severity-ok { color: #15803d; }
+        .severity-info { color: #475569; }
+        .severity-warn { color: #b45309; }
+        .severity-error { color: #dc2626; }
+        .table-scroll { scrollbar-width: thin; }
+        th { position: sticky; top: 0; background: #f8fafc; z-index: 1; }
+        .metric-value { font-variant-numeric: tabular-nums; }
+        pre.proposal { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; line-height: 1.55; white-space: pre-wrap; }
+        @media print {
+            body { background: #fff; }
+            header, aside, nav, #panel-summary, #panel-lines, #panel-alternates, #panel-guide, #print-hint { display: none !important; }
+            #panel-proposal { display: block !important; margin: 0 !important; border: 0 !important; box-shadow: none !important; height: auto !important; overflow: visible !important; }
+            main { display: block !important; height: auto !important; }
+            pre.proposal { font-size: 11pt; }
+        }
+    </style>
+</head>
+<body class="h-full text-slate-800">
+<div class="h-full flex flex-col">
+    <header class="flex items-center justify-between gap-3 px-4 py-2 bg-white border-b border-slate-200">
+        <div class="flex items-baseline gap-3 min-w-0">
+            <h1 class="text-base font-bold whitespace-nowrap">Bid builder</h1>
+            <span class="text-[11px] text-slate-500 truncate">Every suite's takeoff · markup · tax · progress billing · proposal</span>
+        </div>
+        <div class="flex items-center gap-1.5 text-[11px] font-semibold shrink-0">
+            <a href="Editor.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Editor</a>
+            <a href="project-dashboard.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Dashboard</a>
+            <a href="price-book.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Prices</a>
+            <a href="framing-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Framing</a>
+            <a href="deck-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Deck</a>
+            <a href="electrical-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Electrical</a>
+            <a href="landscape-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Landscape</a>
+            <a href="lighting-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Lighting</a>
+            <a href="plumbing-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Plumbing</a>
+            <a href="roof-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Roof</a>
+            <a href="wall-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Walls</a>
+            <a href="../docs/bidrules.md" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50" title="Commercial rules">Rules</a>
+            <button id="refresh-sources" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Refresh sources</button>
+            <button id="reset" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Reset</button>
+            <button id="copy-proposal" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Copy proposal</button>
+            <button id="print-proposal" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Print</button>
+            <button id="export-csv" class="px-2 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700">Bid CSV</button>
+        </div>
+    </header>
+
+    <main class="flex-1 min-h-0 flex">
+        <aside class="w-[380px] shrink-0 overflow-y-auto bg-white border-r border-slate-200 p-4 space-y-4">
+            <section>
+                <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-2">Project</h2>
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="block text-[11px] text-slate-500 col-span-2">Project name
+                        <input id="b-name" type="text" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 text-[11px]">
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Client
+                        <input id="b-client" type="text" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 text-[11px]">
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Reference
+                        <input id="b-ref" type="text" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]">
+                    </label>
+                    <label class="block text-[11px] text-slate-500 col-span-2">Address
+                        <input id="b-address" type="text" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 text-[11px]">
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Date
+                        <input id="b-date" type="date" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]">
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Valid (days)
+                        <input id="b-validity" type="number" min="7" max="120" step="1" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]">
+                    </label>
+                    <label class="block text-[11px] text-slate-500 col-span-2">Scope note
+                        <textarea id="b-scope" rows="2" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-1 text-[11px]" placeholder="Supply and install the work in the attached schedules…"></textarea>
+                    </label>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-2">Commercial</h2>
+                <div class="grid grid-cols-3 gap-2">
+                    <label class="block text-[11px] text-slate-500">Overhead %
+                        <input id="b-overhead" type="number" min="0" max="60" step="0.5" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]">
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Profit %
+                        <input id="b-profit" type="number" min="0" max="50" step="0.5" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]">
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Contingency %
+                        <input id="b-contingency" type="number" min="0" max="25" step="0.5" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]">
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Permit $
+                        <input id="b-permit" type="number" min="0" max="50000" step="10" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]">
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Design fee $
+                        <input id="b-design" type="number" min="0" max="100000" step="50" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]">
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Discount $
+                        <input id="b-discount" type="number" min="0" max="100000" step="10" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]">
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Tax %
+                        <input id="b-tax" type="number" min="0" max="25" step="0.1" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]">
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Deposit %
+                        <input id="b-deposit" type="number" min="0" max="100" step="1" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]">
+                    </label>
+                    <label class="flex items-end gap-1 text-[10px] text-slate-600 pb-1"><input type="checkbox" id="b-tax-labour"> Tax labour</label>
+                </div>
+            </section>
+
+            <section class="rounded-lg border border-slate-200 p-3">
+                <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-2">Contract</h2>
+                <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] font-mono">
+                    <span class="text-slate-500">Base</span><b id="m-base" class="text-right metric-value">—</b>
+                    <span class="text-slate-500">Overhead</span><b id="m-overhead" class="text-right metric-value">—</b>
+                    <span class="text-slate-500">Profit</span><b id="m-profit" class="text-right metric-value">—</b>
+                    <span class="text-slate-500">Contingency</span><b id="m-contingency" class="text-right metric-value">—</b>
+                    <span class="text-slate-500">Fees</span><b id="m-fees" class="text-right metric-value">—</b>
+                    <span class="text-slate-500">Pre-tax</span><b id="m-pretax" class="text-right metric-value">—</b>
+                    <span class="text-slate-500">Tax</span><b id="m-tax" class="text-right metric-value">—</b>
+                    <span class="text-slate-500">Margin</span><b id="m-margin" class="text-right metric-value">—</b>
+                </div>
+                <div class="mt-3 pt-2 border-t border-slate-100 flex items-baseline justify-between">
+                    <span class="text-[10px] uppercase tracking-wide text-slate-400">Contract total</span>
+                    <b id="m-total" class="text-lg font-mono">—</b>
+                </div>
+                <p id="m-sub" class="text-[9px] text-slate-400 text-right"></p>
+                <p id="check-summary" class="text-[10px] font-mono mt-1">—</p>
+                <p id="m-sources" class="text-[9px] text-slate-400 mt-1"></p>
+            </section>
+
+            <section>
+                <div class="flex items-center justify-between">
+                    <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">Bid checks</h2>
+                    <span id="issue-count" class="text-[10px] font-mono text-slate-400">—</span>
+                </div>
+                <ul id="checks" class="space-y-1 mt-1.5 text-[11px] leading-snug"></ul>
+            </section>
+
+            <p class="text-[10px] text-slate-400 leading-snug">
+                Allowance prices from each suite are planning figures. Replace them with supplier quotes, confirm the state’s deposit, tax and lien rules, and have the contract reviewed before signature.
+                <a href="../docs/bidrules.md" class="underline hover:text-emerald-700">Commercial rules</a>.
+            </p>
+            <p id="status" class="text-[10px] text-emerald-700 min-h-[1rem]"></p>
+        </aside>
+
+        <div class="flex-1 min-w-0 flex flex-col">
+            <nav class="flex items-center gap-2 px-3 pt-3">
+                <button class="tab active px-3 py-1.5 rounded-lg text-[11px] font-bold border border-slate-200" data-tab="summary">Summary</button>
+                <button class="tab px-3 py-1.5 rounded-lg text-[11px] font-bold border border-slate-200 bg-white hover:bg-slate-50" data-tab="lines">Lines</button>
+                <button class="tab px-3 py-1.5 rounded-lg text-[11px] font-bold border border-slate-200 bg-white hover:bg-slate-50" data-tab="proposal">Proposal</button>
+                <button class="tab px-3 py-1.5 rounded-lg text-[11px] font-bold border border-slate-200 bg-white hover:bg-slate-50" data-tab="alternates">Alternates</button>
+                <button class="tab px-3 py-1.5 rounded-lg text-[11px] font-bold border border-slate-200 bg-white hover:bg-slate-50" data-tab="guide">Bid guide</button>
+                <span class="text-[10px] text-slate-400 ml-auto pr-1">harvested from each designer’s saved draft</span>
+            </nav>
+
+            <div id="panel-summary" class="flex-1 min-h-0 overflow-y-auto m-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+                <div id="source-cards" class="px-4 py-3 grid grid-cols-2 md:grid-cols-4 gap-2 border-b border-slate-100"></div>
+                <div class="px-4 py-3 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div>
+                        <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-1">Suite subtotals</h2>
+                        <div id="source-table" class="rounded-lg border border-slate-200 overflow-x-auto table-scroll"></div>
+                    </div>
+                    <div>
+                        <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-1">Progress billing</h2>
+                        <div id="billing-table" class="rounded-lg border border-slate-200 overflow-x-auto table-scroll"></div>
+                        <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mt-4 mb-1">Source status</h2>
+                        <ul id="source-status" class="space-y-1 text-[11px] text-slate-600"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="panel-lines" class="hidden flex-1 min-h-0 overflow-y-auto m-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+                <div class="px-4 py-3 border-b border-slate-100 flex flex-wrap items-end gap-2">
+                    <div>
+                        <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">Priced lines</h2>
+                        <p id="lines-summary" class="text-[11px] text-slate-500 mt-0.5">—</p>
+                    </div>
+                    <div class="ml-auto flex flex-wrap items-end gap-1.5">
+                        <input id="manual-desc" type="text" placeholder="Manual line description" class="w-52 rounded border border-slate-200 px-2 py-1 text-[11px]">
+                        <input id="manual-qty" type="number" min="0" step="1" value="1" class="w-16 rounded border border-slate-200 px-1 py-1 font-mono text-[11px]">
+                        <select id="manual-unit" class="rounded border border-slate-200 px-1 py-1 text-[11px]">
+                            <option value="ea">ea</option>
+                            <option value="m">m</option>
+                            <option value="m²">m²</option>
+                            <option value="hr">hr</option>
+                            <option value="lot">lot</option>
+                        </select>
+                        <input id="manual-cost" type="number" min="0" step="1" placeholder="Unit $" class="w-24 rounded border border-slate-200 px-1 py-1 font-mono text-[11px]">
+                        <button id="add-manual" class="px-2 py-1 rounded bg-emerald-600 text-white text-[11px] font-semibold hover:bg-emerald-700">Add line</button>
+                    </div>
+                </div>
+                <div id="lines-table" class="p-3 overflow-x-auto table-scroll"></div>
+            </div>
+
+            <div id="panel-proposal" class="hidden flex-1 min-h-0 overflow-y-auto m-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+                <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">Proposal</h2>
+                        <p class="text-[11px] text-slate-500 mt-0.5">Generated from the same totals; copy or print it as the offer.</p>
+                    </div>
+                    <span id="print-hint" class="text-[10px] text-slate-400 font-mono">Print hides the editor and shows only this page</span>
+                </div>
+                <pre id="proposal-text" class="proposal p-5 text-slate-700"></pre>
+            </div>
+
+            <div id="panel-alternates" class="hidden flex-1 min-h-0 overflow-y-auto m-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+                <div class="px-4 py-3 border-b border-slate-100 flex flex-wrap items-end gap-2">
+                    <div>
+                        <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">Alternates</h2>
+                        <p id="alternates-summary" class="text-[11px] text-slate-500 mt-0.5">—</p>
+                    </div>
+                    <div class="ml-auto flex flex-wrap items-end gap-1.5">
+                        <input id="alternate-desc" type="text" placeholder="Alternate description" class="w-52 rounded border border-slate-200 px-2 py-1 text-[11px]">
+                        <input id="alternate-qty" type="number" min="0" step="1" value="1" class="w-16 rounded border border-slate-200 px-1 py-1 font-mono text-[11px]">
+                        <input id="alternate-cost" type="number" min="0" step="1" placeholder="Unit $" class="w-24 rounded border border-slate-200 px-1 py-1 font-mono text-[11px]">
+                        <button id="add-alternate" class="px-2 py-1 rounded bg-emerald-600 text-white text-[11px] font-semibold hover:bg-emerald-700">Add alternate</button>
+                    </div>
+                </div>
+                <div id="alternates-table" class="p-3 overflow-x-auto table-scroll"></div>
+            </div>
+
+            <div id="panel-guide" class="hidden flex-1 min-h-0 overflow-y-auto m-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+                <div class="px-4 py-3 border-b border-slate-100">
+                    <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">Commercial rules</h2>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Pricing, contract and risk conventions for a residential package. State law governs the contract terms.</p>
+                </div>
+                <div id="guide-rules" class="p-3 space-y-2"></div>
+                <div class="px-4 py-3 border-t border-slate-100">
+                    <h3 class="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1">Formulas</h3>
+                    <div id="guide-formulas"></div>
+                </div>
+                <div id="guide-glossary" class="p-4 grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script type="module" src="../features/bid/page.js"></script>
+    <script type="module" src="../shared/site.js"></script>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <script src="../shared/error-reporting.js"></script>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kitchen suite · runs, gaps, fillers and clearances</title>
+    <meta name="description" content="Lay out a kitchen run with fillers, appliance air gaps, landing space and the NKBA clearance checks.">
+    <link rel="canonical" href="https://dev-justin-time.github.io/floorplan_3d/pages/kitchen-designer.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Floorplan 3D">
+    <meta property="og:title" content="Kitchen suite · runs, gaps, fillers and clearances">
+    <meta property="og:description" content="Lay out a kitchen run with fillers, appliance air gaps, landing space and the NKBA clearance checks.">
+    <meta property="og:url" content="https://dev-justin-time.github.io/floorplan_3d/pages/kitchen-designer.html">
+    <meta property="og:image" content="../assets/images/hero-plan-1.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Kitchen suite · runs, gaps, fillers and clearances">
+    <meta name="twitter:description" content="Lay out a kitchen run with fillers, appliance air gaps, landing space and the NKBA clearance checks.">
+    <meta name="twitter:image" content="../assets/images/hero-plan-1.png">
+<link rel="stylesheet" href="../assets/tailwind.css">
+    <style>
+        html, body { margin: 0; height: 100%; overflow: hidden; background: #f8fafc; }
+        input[type="number"] { font-variant-numeric: tabular-nums; }
+        input[readonly] { background: #f1f5f9; color: #475569; }
+        canvas { display: block; }
+        #run-canvas { position: absolute; inset: 0; }
+        .table-scroll { scrollbar-width: thin; }
+        th { position: sticky; top: 0; background: #f8fafc; z-index: 1; }
+        .metric-value { font-variant-numeric: tabular-nums; }
+    </style>
+</head>
+<body class="h-full text-slate-800">
+<div class="h-full flex flex-col">
+    <header class="flex items-center justify-between gap-3 px-4 py-2 bg-white border-b border-slate-200">
+        <div class="flex items-baseline gap-3 min-w-0">
+            <h1 class="text-base font-bold whitespace-nowrap">Kitchen suite</h1>
+            <span class="text-[11px] text-slate-500 truncate">Runs · fillers · air gaps · landings · aisle</span>
+        </div>
+        <div class="flex items-center gap-1.5 text-[11px] font-semibold shrink-0">
+            <a href="Editor.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Editor</a>
+            <a href="plumbing-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Plumbing</a>
+            <a href="electrical-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Electrical</a>
+            <a href="lighting-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Lighting</a>
+            <button id="reset" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Reset</button>
+            <button id="send-editor" class="px-2 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700">Send to editor</button>
+        </div>
+    </header>
+
+    <main class="flex-1 min-h-0 flex">
+        <!-- Run inputs and the module list -->
+        <aside class="w-[360px] shrink-0 overflow-y-auto bg-white border-r border-slate-200 p-4 space-y-4">
+            <section>
+                <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-2">The wall</h2>
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="block text-[11px] text-slate-500">Measured run (m)
+                        <input type="number" id="k-length" min="0.6" max="20" step="0.01" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]">
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Clear aisle (m)
+                        <input type="number" id="k-aisle" min="0.6" max="5" step="0.01" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]">
+                    </label>
+                    <label class="col-span-2 block text-[11px] text-slate-500">Cabinetry line
+                        <select id="k-line" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-1 text-[11px]"></select>
+                    </label>
+                </div>
+                <p class="text-[10px] text-slate-400 leading-snug mt-1.5">
+                    The run is measured wall to wall. Fillers close the run at each end; the aisle is the clear
+                    space to the opposite run or island.
+                </p>
+            </section>
+
+            <section>
+                <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-2">Add a module</h2>
+                <div class="flex gap-1.5">
+                    <select id="k-module" class="flex-1 min-w-0 rounded border border-slate-200 px-1 py-1 text-[11px]"></select>
+                    <button id="add-module" class="shrink-0 rounded bg-slate-900 px-2 py-1 text-[11px] font-bold text-white hover:bg-slate-700">Add</button>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-1.5">Base cabinets, sink base, range, fridge, dishwasher and tall units.</p>
+            </section>
+
+            <section>
+                <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-2">Run, wall to wall</h2>
+                <div id="module-list" class="space-y-1"></div>
+            </section>
+
+            <section class="rounded-lg bg-slate-50 border border-slate-200 p-3">
+                <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-2">Gap policy</h2>
+                <ul class="space-y-1 text-[10px] leading-snug text-slate-500">
+                    <li><strong>Filler</strong> 3–150 mm to close each end; wider needs a filler cabinet.</li>
+                    <li><strong>Air gap</strong> 25 mm at a refrigerator, 20 mm at a tall pantry.</li>
+                    <li><strong>Landing</strong> 600 mm beside the sink, 380 mm beside the range.</li>
+                    <li><strong>Aisle</strong> 1.07 m minimum, 1.2 m preferred between runs.</li>
+                </ul>
+            </section>
+        </aside>
+
+        <!-- Elevation, dimension string and gap table -->
+        <section class="flex-1 min-w-0 flex flex-col bg-slate-50">
+            <div id="run-stage" class="relative flex-1 min-h-[280px] overflow-hidden">
+                <canvas id="run-canvas"></canvas>
+            </div>
+            <div class="h-[188px] shrink-0 border-t border-slate-200 bg-white overflow-hidden flex flex-col">
+                <div class="flex items-center justify-between px-3 py-1.5 border-b border-slate-100">
+                    <span class="text-[10px] uppercase tracking-wider font-bold text-slate-400">Gaps in this run</span>
+                    <span id="k-status" class="text-[10px] text-slate-500 truncate">—</span>
+                </div>
+                <div class="flex-1 overflow-auto table-scroll">
+                    <table class="w-full border-collapse text-left">
+                        <thead>
+                            <tr class="text-[9px] uppercase tracking-wide text-slate-400">
+                                <th class="px-2 py-1">Kind</th>
+                                <th class="px-2 py-1">Between</th>
+                                <th class="px-2 py-1 text-right">Width</th>
+                            </tr>
+                        </thead>
+                        <tbody id="gap-rows"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Score, totals, checks and the rule register -->
+        <aside class="w-[300px] shrink-0 overflow-y-auto bg-white border-l border-slate-200 p-4 space-y-4">
+            <section class="flex items-start justify-between gap-2">
+                <div>
+                    <p class="text-[10px] uppercase tracking-wider text-slate-400">Layout score</p>
+                    <p id="k-score" class="text-2xl font-black text-slate-800">—</p>
+                </div>
+                <div id="k-summary" class="text-right space-y-0.5"></div>
+            </section>
+
+            <section class="rounded-lg border border-slate-200 p-2.5 space-y-1" id="k-stats"></section>
+
+            <section>
+                <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-2">Checks</h2>
+                <div id="check-list" class="space-y-1"></div>
+            </section>
+
+            <section>
+                <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-2">Rules</h2>
+                <div id="rule-list"></div>
+                <div id="code-scope" class="mt-2 rounded border border-slate-200 bg-slate-50 p-2"></div>
+            </section>
+        </aside>
+    </main>
+</div>
+
+<script type="module" src="../features/kitchen/page.js"></script>
+<script type="module" src="../shared/site.js"></script>
+</body>
+</html>

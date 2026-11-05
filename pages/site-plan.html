@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <script src="../shared/error-reporting.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Site plan · lot, setbacks and house placement</title>
+    <meta property="og:url" content="https://dev-justin-time.github.io/floorplan_3d/pages/site-plan.html">
+    <meta name="description" content="Create the site plan: lot size, setbacks, house footprint from the floorplan, driveway and coverage checks.">
+    <link rel="canonical" href="https://dev-justin-time.github.io/floorplan_3d/pages/site-plan.html">
+<link rel="stylesheet" href="../assets/tailwind.css">
+    <style>
+        html, body { margin: 0; min-height: 100%; background: #f8fafc; }
+        body { font-family: ui-sans-serif, system-ui, sans-serif; }
+        #site-canvas { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+        .metric-value { font-variant-numeric: tabular-nums; }
+    </style>
+</head>
+<body class="min-h-full text-slate-800">
+<div class="min-h-screen flex flex-col">
+    <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-2.5">
+            <div class="flex min-w-0 items-baseline gap-3">
+                <h1 class="text-base font-bold whitespace-nowrap">Site plan</h1>
+                <span class="truncate text-[11px] text-slate-500">Lot · setbacks · house placement · coverage</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-[11px] font-semibold">
+                <a href="Editor.html" class="rounded border border-slate-200 px-2 py-1 hover:bg-slate-50">Editor</a>
+                <a href="plan-studio.html" class="rounded border border-slate-200 px-2 py-1 hover:bg-slate-50">Plan studio</a>
+                <a href="foundation-designer.html" class="rounded border border-slate-200 px-2 py-1 hover:bg-slate-50">Foundation</a>
+                <a href="permits-inspections.html" class="rounded border border-slate-200 px-2 py-1 hover:bg-slate-50">Permits</a>
+                <button id="reset" class="rounded border border-slate-200 px-2 py-1 hover:bg-slate-50">Reset</button>
+                <button id="export-csv" class="rounded bg-slate-900 px-2.5 py-1 text-white hover:bg-slate-700">Site CSV</button>
+            </div>
+        </div>
+    </header>
+    <main class="mx-auto w-full max-w-7xl flex-1 px-4 py-4 grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-3">
+        <aside class="space-y-3">
+            <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">Create · lot + house</h2>
+                <div class="grid grid-cols-2 gap-2 mt-2">
+                    <label class="block text-[11px] text-slate-500">Lot W (m)<input id="s-lotw" type="number" min="5" max="200" step="0.5" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]"></label>
+                    <label class="block text-[11px] text-slate-500">Lot D (m)<input id="s-lotd" type="number" min="5" max="200" step="0.5" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]"></label>
+                    <label class="block text-[11px] text-slate-500">Front setback (m)<input id="s-front" type="number" min="0" max="30" step="0.5" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]"></label>
+                    <label class="block text-[11px] text-slate-500">Side setback (m)<input id="s-side" type="number" min="0" max="30" step="0.5" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]"></label>
+                    <label class="block text-[11px] text-slate-500">Rear setback (m)<input id="s-rear" type="number" min="0" max="30" step="0.5" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]"></label>
+                    <label class="block text-[11px] text-slate-500">Max coverage %<input id="s-maxcov" type="number" min="5" max="90" step="1" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]"></label>
+                </div>
+                <div class="mt-2 flex gap-1.5">
+                    <button id="from-plan" class="flex-1 rounded border border-slate-200 px-2 py-1.5 text-[11px] font-bold hover:bg-slate-50">House size from floorplan</button>
+                    <button id="center" class="flex-1 rounded border border-slate-200 px-2 py-1.5 text-[11px] font-bold hover:bg-slate-50">Centre house</button>
+                </div>
+                <p class="mt-1 text-[10px] text-slate-400">Drag the house on the plan. Logical check: house must sit inside the buildable area (setbacks) and under max coverage.</p>
+            </section>
+            <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">Checks + takeoff</h2>
+                <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] font-mono mt-2">
+                    <span class="text-slate-500">House</span><b id="m-house" class="text-right metric-value">—</b>
+                    <span class="text-slate-500">Coverage</span><b id="m-cov" class="text-right metric-value">—</b>
+                    <span class="text-slate-500">Setbacks</span><b id="m-set" class="text-right metric-value">—</b>
+                    <span class="text-slate-500">Driveway</span><b id="m-drive" class="text-right metric-value">—</b>
+                </div>
+                <p id="status" class="text-[10px] mt-1 text-slate-500"></p>
+                <div id="related-pricing" class="mt-2 flex gap-2 flex-wrap"></div>
+            </section>
+        </aside>
+        <section class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <div class="px-4 py-2 border-b border-slate-100 flex items-center justify-between">
+                <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">Visual plan · drag the house</h2>
+                <span class="text-[10px] font-mono text-slate-400">lot · buildable · house · driveway · north</span>
+            </div>
+            <div class="h-[520px] relative"><canvas id="site-canvas"></canvas></div>
+            <p class="px-4 py-2 text-[10px] text-slate-500 border-t border-slate-100">Saves to <span class="font-mono">site-plan-draft</span> and feeds Plan studio, Foundation and Permits. Same lot logic the schedule gates on.</p>
+        </section>
+    </main>
+</div>
+<script type="module" src="../assets/page-scripts/site-plan.js"></script>
+    <script type="module" src="../shared/site.js"></script>
+</body>
+</html>

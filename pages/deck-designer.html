@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <script src="../shared/error-reporting.js"></script>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deck suite · framing, footings, guards and stairs</title>
+    <meta name="description" content="Design a deck with bearers, joists, footings, guards and stairs, checked against the deck rules with a takeoff.">
+    <link rel="canonical" href="https://dev-justin-time.github.io/floorplan_3d/pages/deck-designer.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Floorplan 3D">
+    <meta property="og:title" content="Deck suite · framing, footings, guards and stairs">
+    <meta property="og:description" content="Design a deck with bearers, joists, footings, guards and stairs, checked against the deck rules with a takeoff.">
+    <meta property="og:url" content="https://dev-justin-time.github.io/floorplan_3d/pages/deck-designer.html">
+    <meta property="og:image" content="../assets/images/hero-plan-1.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Deck suite · framing, footings, guards and stairs">
+    <meta name="twitter:description" content="Design a deck with bearers, joists, footings, guards and stairs, checked against the deck rules with a takeoff.">
+    <meta name="twitter:image" content="../assets/images/hero-plan-1.png">
+<link rel="stylesheet" href="../assets/tailwind.css">
+    <style>
+        html, body { margin: 0; height: 100%; overflow: hidden; background: #f8fafc; }
+        input[type="range"] { accent-color: #b45309; }
+        input[readonly] { background: #f1f5f9; color: #475569; }
+        canvas { display: block; }
+        #plan { width: 100%; height: 100%; touch-action: none; cursor: grab; }
+        #plan.dragging { cursor: grabbing; }
+        #view-section, #view-footing, #view-axonometric { width: 100%; height: 100%; display: block; }
+        .tab.active { background: #0f172a; color: white; }
+        .severity-ok { color: #15803d; }
+        .severity-info { color: #475569; }
+        .severity-warn { color: #b45309; }
+        .severity-error { color: #dc2626; }
+        .rule-body { display: none; }
+        .rule.open .rule-body { display: block; }
+        .rule.open .rule-caret { transform: rotate(90deg); }
+        .rule-caret { transition: transform .15s ease; }
+        .chip.active { background: #0f172a; color: white; border-color: #0f172a; }
+        .table-scroll { scrollbar-width: thin; }
+        th { position: sticky; top: 0; background: #f8fafc; z-index: 1; }
+        .metric-value { font-variant-numeric: tabular-nums; }
+        .legend-dot { width: 9px; height: 9px; border-radius: 999px; display: inline-block; }
+        .small-num { font-variant-numeric: tabular-nums; }
+    </style>
+</head>
+<body class="h-full text-slate-800">
+<div class="h-full flex flex-col">
+    <header class="flex items-center justify-between gap-3 px-4 py-2 bg-white border-b border-slate-200">
+        <div class="flex items-baseline gap-3 min-w-0">
+            <h1 class="text-base font-bold whitespace-nowrap">Deck suite</h1>
+            <span class="text-[11px] text-slate-500 truncate">Joists · beams · posts · footings · guards · stairs · cut list</span>
+        </div>
+        <div class="flex items-center gap-1.5 text-[11px] font-semibold shrink-0">
+            <a href="Editor.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Editor</a>
+            <a href="framing-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Framing</a>
+            <a href="landscape-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Landscape</a>
+            <a href="electrical-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Electrical</a>
+            <a href="bid-builder.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Bid</a>
+            <a href="stair-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Stairs</a>
+            <a href="roof-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Roof</a>
+            <a href="wall-designer.html" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Walls</a>
+            <a href="../docs/deckrules.md" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50" title="Rules and regulations">Rules</a>
+            <button id="reset" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Reset</button>
+            <button id="schedule-csv" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Schedule CSV</button>
+            <button id="cutlist-csv" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Cut list CSV</button>
+            <button id="takeoff-csv" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-50">Takeoff CSV</button>
+            <button id="send-editor" class="px-2 py-1 rounded bg-amber-600 text-white hover:bg-amber-700">Send to editor</button>
+        </div>
+    </header>
+
+    <main class="flex-1 min-h-0 flex">
+        <aside class="w-[384px] shrink-0 overflow-y-auto bg-white border-r border-slate-200 p-4 space-y-4">
+            <section>
+                <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-2">Deck</h2>
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="block text-[11px] text-slate-500">Shape
+                        <select id="d-shape" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 text-[11px]"></select>
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Fixed to
+                        <select id="d-ledger" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 text-[11px]"></select>
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Width (m)
+                        <input type="number" id="d-width" min="1" max="30" step="0.1" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]">
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Depth (m)
+                        <input type="number" id="d-depth" min="1" max="30" step="0.1" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]">
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Height (m)
+                        <input type="number" id="d-height" min="0" max="6" step="0.05" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]">
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Species / grade
+                        <select id="d-species" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 text-[11px]"></select>
+                    </label>
+                </div>
+                <p id="deck-note" class="text-[10px] text-slate-400 leading-snug mt-1.5"></p>
+            </section>
+
+            <section>
+                <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-2">Framing</h2>
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="block text-[11px] text-slate-500">Joist size
+                        <select id="d-joist" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 text-[11px]"></select>
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Joist spacing
+                        <select id="d-spacing" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 text-[11px]"></select>
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Beam size
+                        <select id="d-beam" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 text-[11px]"></select>
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Beam plies
+                        <select id="d-plies" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 text-[11px]"></select>
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Post size
+                        <select id="d-post" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 text-[11px]"></select>
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Post spacing (m)
+                        <input type="number" id="d-post-spacing" min="0.6" max="6" step="0.1" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]">
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Cantilever (m)
+                        <input type="number" id="d-cantilever" min="0" max="2" step="0.05" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]">
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Footing dia (in)
+                        <input type="number" id="d-footing" min="12" max="48" step="2" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]">
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Frost depth
+                        <select id="d-frost" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 text-[11px]"></select>
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Soil bearing
+                        <select id="d-soil" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 text-[11px]"></select>
+                    </label>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-2">Surface, guard &amp; stairs</h2>
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="block text-[11px] text-slate-500">Decking
+                        <select id="d-decking" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 text-[11px]"></select>
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Board layout
+                        <select id="d-pattern" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 text-[11px]"></select>
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Guard
+                        <select id="d-guard" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 text-[11px]"></select>
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Guard height (in)
+                        <input type="number" id="d-guard-height" min="30" max="48" step="1" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]">
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Waste allowance
+                        <input type="number" id="d-waste" min="0" max="0.4" step="0.01" placeholder="pattern default" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]">
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Cover
+                        <select id="d-cover" class="mt-0.5 w-full rounded border border-slate-200 px-1 py-0.5 text-[11px]"></select>
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Stair width (m)
+                        <input type="number" id="d-stair-width" min="0.6" max="3" step="0.02" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]">
+                    </label>
+                    <label class="block text-[11px] text-slate-500">Cover pitch
+                        <input type="number" id="d-cover-pitch" min="2" max="12" step="0.5" class="mt-0.5 w-full rounded border border-slate-200 px-1.5 py-0.5 font-mono text-[11px]">
+                    </label>
+                </div>
+                <label class="flex items-center gap-1.5 text-[11px] text-slate-600 mt-2"><input type="checkbox" id="d-stairs"> Stair to grade</label>
+            </section>
+
+            <section class="rounded-lg border border-slate-200 p-3">
+                <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-2">Result</h2>
+                <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] font-mono">
+                    <span class="text-slate-500">Deck</span><b id="m-area" class="text-right metric-value">—</b>
+                    <span class="text-slate-500">Joists</span><b id="m-joist" class="text-right metric-value">—</b>
+                    <span class="text-slate-500">Joist span</span><b id="m-span" class="text-right metric-value">—</b>
+                    <span class="text-slate-500">Beam</span><b id="m-beam" class="text-right metric-value">—</b>
+                    <span class="text-slate-500">Posts</span><b id="m-post" class="text-right metric-value">—</b>
+                    <span class="text-slate-500">Footings</span><b id="m-footing" class="text-right metric-value">—</b>
+                    <span class="text-slate-500">Guard</span><b id="m-guard" class="text-right metric-value">—</b>
+                    <span class="text-slate-500">Stairs</span><b id="m-stair" class="text-right metric-value">—</b>
+                    <span class="text-slate-500">Decking</span><b id="m-decking" class="text-right metric-value">—</b>
+                    <span class="text-slate-500">Concrete</span><b id="m-concrete" class="text-right metric-value">—</b>
+                </div>
+                <div class="mt-3 pt-2 border-t border-slate-100 flex items-baseline justify-between">
+                    <span class="text-[10px] uppercase tracking-wide text-slate-400">Estimate</span>
+                    <b id="m-cost" class="text-base font-mono">—</b>
+                </div>
+                <p id="m-cost-sub" class="text-[9px] text-slate-400 text-right"></p>
+                <p id="check-summary" class="text-[10px] font-mono mt-1">—</p>
+                <p class="text-[9px] text-slate-400 mt-1">Planning allowances in USD; the plan, the schedule and the takeoff share one model.</p>
+            </section>
+
+            <section>
+                <div class="flex items-center justify-between">
+                    <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">Plan checks</h2>
+                    <span id="issue-count" class="text-[10px] font-mono text-slate-400">—</span>
+                </div>
+                <ul id="checks" class="space-y-1 mt-1.5 text-[11px] leading-snug"></ul>
+                <button id="show-all-checks" class="mt-1.5 text-[10px] text-amber-700 underline hover:text-amber-900">Show all checks</button>
+            </section>
+
+            <p class="text-[10px] text-slate-400 leading-snug">
+                Design aid. The suite checks the deck against IRC 2021 §R507 (decks), §R312 (guards), §R311.7 (stairs), §R401.4 and §R403.1 (soil and footings) with AWC NDS member capacities; local amendments and a licensed engineer govern.
+                <a href="../docs/deckrules.md" class="underline hover:text-amber-700">Rules &amp; regulations</a>.
+            </p>
+            <p id="status" class="text-[10px] text-amber-700 min-h-[1rem]"></p>
+        </aside>
+
+        <div class="flex-1 min-w-0 flex flex-col">
+            <nav class="flex items-center gap-2 px-3 pt-3">
+                <button class="tab active px-3 py-1.5 rounded-lg text-[11px] font-bold border border-slate-200" data-tab="design">Design</button>
+                <button class="tab px-3 py-1.5 rounded-lg text-[11px] font-bold border border-slate-200 bg-white hover:bg-slate-50" data-tab="framing">Framing</button>
+                <button class="tab px-3 py-1.5 rounded-lg text-[11px] font-bold border border-slate-200 bg-white hover:bg-slate-50" data-tab="takeoff">Takeoff</button>
+                <button class="tab px-3 py-1.5 rounded-lg text-[11px] font-bold border border-slate-200 bg-white hover:bg-slate-50" data-tab="cutlist">Cut list</button>
+                <button class="tab px-3 py-1.5 rounded-lg text-[11px] font-bold border border-slate-200 bg-white hover:bg-slate-50" data-tab="rules">Rules</button>
+                <button class="tab px-3 py-1.5 rounded-lg text-[11px] font-bold border border-slate-200 bg-white hover:bg-slate-50" data-tab="glossary">Glossary</button>
+                <span class="text-[10px] text-slate-400 ml-auto pr-1">drag to pan · wheel to zoom</span>
+            </nav>
+
+            <div id="panel-design" class="flex-1 min-h-0 overflow-y-auto">
+                <section class="bg-white m-3 rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
+                    <div class="flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-1.5 border-b border-slate-100">
+                        <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">Framing plan · actual lumber</h2>
+                        <label class="flex items-center gap-1 text-[10px] text-slate-600"><input type="checkbox" id="show-decking" checked> Boards</label>
+                        <label class="flex items-center gap-1 text-[10px] text-slate-600"><input type="checkbox" id="show-joists" checked> Joists</label>
+                        <label class="flex items-center gap-1 text-[10px] text-slate-600"><input type="checkbox" id="show-posts" checked> Posts</label>
+                        <label class="flex items-center gap-1 text-[10px] text-slate-600"><input type="checkbox" id="show-footings" checked> Footings</label>
+                        <label class="flex items-center gap-1 text-[10px] text-slate-600"><input type="checkbox" id="show-guard" checked> Guard</label>
+                        <label class="flex items-center gap-1 text-[10px] text-slate-600"><input type="checkbox" id="show-stairs" checked> Stairs</label>
+                        <label class="flex items-center gap-1 text-[10px] text-slate-600"><input type="checkbox" id="show-hardware" checked> Hardware</label>
+                        <label class="flex items-center gap-1 text-[10px] text-slate-600"><input type="checkbox" id="show-dimensions" checked> Dimensions</label>
+                        <div class="flex items-center gap-2 ml-auto text-[10px] text-slate-400">
+                            <span><i class="legend-dot" style="background:#c9a87a"></i> boards</span>
+                            <span><i class="legend-dot" style="background:#8a5a2b"></i> joist</span>
+                            <span><i class="legend-dot" style="background:#b45309"></i> beam</span>
+                            <span><i class="legend-dot" style="background:#7c2d12"></i> post</span>
+                            <span><i class="legend-dot" style="background:#0f766e"></i> guard</span>
+                            <button id="fit-plan" class="px-1.5 py-0.5 rounded border border-slate-200 font-bold text-slate-600 hover:bg-slate-50">Fit</button>
+                        </div>
+                    </div>
+                    <div class="h-[420px] min-h-[320px] relative">
+                        <canvas id="plan"></canvas>
+                        <div id="plan-hint" class="absolute left-3 bottom-3 text-[10px] font-mono text-slate-400 pointer-events-none">Framing plan at 1:50 · dimensions in millimetres · boards, hangers, bolts, pads</div>
+                        <div id="hover-readout" class="absolute right-3 top-2 text-[10px] font-mono text-slate-400 pointer-events-none"></div>
+                    </div>
+                </section>
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-3 mx-3 mb-3">
+                    <section class="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
+                        <div class="px-3 py-1.5 border-b border-slate-100 flex items-baseline justify-between">
+                            <h3 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">Section · ledger → footing</h3>
+                            <span class="text-[9px] font-mono text-slate-400">side elevation</span>
+                        </div>
+                        <div class="h-[260px] relative"><canvas id="view-section"></canvas></div>
+                        <p class="px-3 py-1.5 text-[10px] text-slate-500 border-t border-slate-100">Joist on beam on post on pad — guard, hanger and frost depth to scale.</p>
+                    </section>
+                    <section class="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
+                        <div class="px-3 py-1.5 border-b border-slate-100 flex items-baseline justify-between">
+                            <h3 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">Footing detail</h3>
+                            <span class="text-[9px] font-mono text-slate-400">close-up</span>
+                        </div>
+                        <div class="h-[260px] relative"><canvas id="view-footing"></canvas></div>
+                        <p class="px-3 py-1.5 text-[10px] text-slate-500 border-t border-slate-100">Post base, anchor and bell footing with diameter + depth callouts.</p>
+                    </section>
+                    <section class="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
+                        <div class="px-3 py-1.5 border-b border-slate-100 flex items-baseline justify-between">
+                            <h3 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">Framing view · 3D</h3>
+                            <span class="text-[9px] font-mono text-slate-400">axonometric</span>
+                        </div>
+                        <div class="h-[260px] relative"><canvas id="view-axonometric"></canvas></div>
+                        <p class="px-3 py-1.5 text-[10px] text-slate-500 border-t border-slate-100">Boards, joists, beam plies, posts, guard and stair in one assembly view.</p>
+                    </section>
+                </div>
+            </div>
+
+            <div id="panel-framing" class="hidden flex-1 min-h-0 overflow-y-auto m-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+                <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">Framing schedule</h2>
+                        <p id="schedule-summary" class="text-[11px] text-slate-500 mt-0.5">—</p>
+                    </div>
+                    <div id="schedule-cards" class="flex gap-2 text-[10px] font-mono"></div>
+                </div>
+                <div id="schedule-table" class="p-3 overflow-x-auto table-scroll"></div>
+            </div>
+
+            <div id="panel-takeoff" class="hidden flex-1 min-h-0 overflow-y-auto m-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+                <div id="takeoff-cards" class="px-4 py-3 grid grid-cols-2 md:grid-cols-4 gap-2 border-b border-slate-100"></div>
+                <div class="px-4 py-3">
+                    <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-1">Bill of materials</h2>
+                    <div id="takeoff-bom" class="rounded-lg border border-slate-200 overflow-x-auto table-scroll"></div>
+                    <ul id="takeoff-notes" class="mt-3 space-y-1 text-[10px] text-slate-500 list-disc pl-4"></ul>
+                </div>
+            </div>
+
+            <div id="panel-cutlist" class="hidden flex-1 min-h-0 overflow-y-auto m-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+                <div class="px-4 py-3 border-b border-slate-100 flex items-baseline justify-between">
+                    <div>
+                        <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">Cut list</h2>
+                        <p id="cutlist-summary" class="text-[11px] text-slate-500 mt-0.5">—</p>
+                    </div>
+                    <span class="text-[10px] text-slate-400 font-mono">lengths in metres</span>
+                </div>
+                <div id="cutlist-body" class="p-3 overflow-x-auto table-scroll"></div>
+            </div>
+
+            <div id="panel-rules" class="hidden flex-1 min-h-0 overflow-y-auto m-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+                <div class="px-4 py-3 border-b border-slate-100">
+                    <div class="flex flex-wrap items-baseline justify-between gap-2">
+                        <div>
+                            <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">Rules &amp; regulations</h2>
+                            <p class="text-[11px] text-slate-500 mt-0.5">Model code: IRC 2021 §R507 · §R312 · §R311.7 · AWC NDS. Confirm local amendments.</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <a href="../docs/deckrules.csv" download class="text-[10px] text-amber-700 underline">Rules CSV</a>
+                            <a href="../docs/deckrules.md" target="_blank" rel="noopener" class="text-[10px] text-amber-700 underline">Rules MD</a>
+                            <span id="rules-summary" class="text-[10px] font-mono"></span>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-1.5 mt-2">
+                        <input id="rules-search" type="search" placeholder="Search the code, a member or a check…" class="w-72 rounded border border-slate-200 px-2 py-1 text-[11px]">
+                        <label class="flex items-center gap-1 text-[10px] text-slate-600 ml-1"><input type="checkbox" id="rules-issues"> Only rules needing attention</label>
+                    </div>
+                    <div id="rules-chips" class="flex flex-wrap gap-1 mt-2"></div>
+                </div>
+                <div id="rules-list" class="p-3 space-y-2"></div>
+            </div>
+
+            <div id="panel-glossary" class="hidden flex-1 min-h-0 overflow-y-auto m-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+                <div class="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                        <h2 class="text-[11px] uppercase tracking-wider font-bold text-slate-500">Glossary &amp; formulas</h2>
+                        <p class="text-[11px] text-slate-500 mt-0.5">Framing, guard and stair terms, plus the span and load formulas the suite runs.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input id="glossary-search" type="search" placeholder="Search terms…" class="w-56 rounded border border-slate-200 px-2 py-1 text-[11px]">
+                        <span id="glossary-count" class="text-[10px] font-mono text-slate-400"></span>
+                    </div>
+                </div>
+                <div class="px-4 py-3 border-b border-slate-100">
+                    <h3 class="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1">Formulas</h3>
+                    <div id="formula-list"></div>
+                </div>
+                <div id="glossary-list" class="p-3 space-y-3"></div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script type="module" src="../features/deck/page.js"></script>
+    <script type="module" src="../shared/site.js"></script>
+</body>
+</html>

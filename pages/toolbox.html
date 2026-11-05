@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <script src="../shared/error-reporting.js"></script>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D toolbox · colour, units, texel density, texture memory and texture maps</title>
+    <meta name="description" content="Browser tools for 3D work: sRGB and linear colour, unit and scale conversion, texel density, GPU texture memory, seamless tiling, PBR channel packing and normal-map flips. Nothing is uploaded.">
+    <link rel="canonical" href="https://dev-justin-time.github.io/floorplan_3d/pages/toolbox.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Floorplan 3D">
+    <meta property="og:title" content="3D toolbox · colour, units, texels, texture maps">
+    <meta property="og:description" content="Browser tools for 3D work: sRGB and linear colour, unit and scale conversion, texel density, GPU texture memory, seamless tiling, PBR channel packing and normal-map flips. Nothing is uploaded.">
+    <meta property="og:url" content="https://dev-justin-time.github.io/floorplan_3d/pages/toolbox.html">
+    <meta property="og:image" content="../assets/images/hero-plan-1.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="3D toolbox · colour, units, texels, texture maps">
+    <meta name="twitter:description" content="Browser tools for 3D work: sRGB and linear colour, unit and scale conversion, texel density, GPU texture memory, seamless tiling, PBR channel packing and normal-map flips. Nothing is uploaded.">
+    <meta name="twitter:image" content="../assets/images/hero-plan-1.png">
+    <link rel="stylesheet" href="../assets/tailwind.css">
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "/vendor/three/three.module.js",
+                "three/addons/": "/vendor/three/addons/"
+            }
+        }
+    </script>
+    <style>
+        html, body { margin: 0; min-height: 100%; background: #f8fafc; }
+        body { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+        .tool-button {
+            display: block; width: 100%; text-align: left; padding: 0.4rem 0.5rem;
+            border: 0; border-radius: 0.375rem; background: transparent; cursor: pointer;
+            font: 600 11px/1.35 ui-sans-serif, system-ui, sans-serif; color: #334155;
+        }
+        .tool-button:hover { background: #f1f5f9; }
+        .tool-button[aria-pressed="true"] { background: #0f172a; color: #ffffff; }
+        input, select { background-color: #ffffff; }
+        input[type="color"] { padding: 2px; }
+        code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    </style>
+</head>
+<body class="min-h-full text-slate-800">
+<div class="min-h-screen flex flex-col">
+    <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div class="mx-auto flex max-w-[1500px] flex-wrap items-center justify-between gap-3 px-4 py-2.5">
+            <div class="flex min-w-0 items-baseline gap-3">
+                <h1 class="text-base font-bold whitespace-nowrap">3D toolbox</h1>
+                <span class="truncate text-[11px] text-slate-500">Colour · units · texels · texture memory · maps</span>
+            </div>
+            <div class="flex items-center gap-1.5 text-[11px] font-semibold">
+                <a href="Editor.html" class="rounded border border-slate-200 px-2 py-1 hover:bg-slate-50">Editor</a>
+                <a href="calc.html" class="rounded border border-slate-200 px-2 py-1 hover:bg-slate-50">Calculators</a>
+                <a href="features.html" class="rounded border border-slate-200 px-2 py-1 hover:bg-slate-50">Features</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="mx-auto flex w-full max-w-[1500px] flex-1 items-start gap-4 px-4 py-4">
+        <aside class="w-56 shrink-0 rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
+            <h2 class="px-1 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">Tools</h2>
+            <nav id="toolbox-list" aria-label="Toolbox tools"></nav>
+            <p id="toolbox-planned" class="mt-3 px-1 text-[10px] leading-snug text-slate-400"></p>
+        </aside>
+
+        <section class="min-w-0 flex-1">
+            <div class="flex flex-wrap items-baseline justify-between gap-2">
+                <h2 id="toolbox-title" class="text-sm font-bold text-slate-900">Tool</h2>
+                <p id="toolbox-status" class="min-h-[1rem] text-[10px] text-slate-400" aria-live="polite"></p>
+            </div>
+            <p id="toolbox-summary" class="mt-0.5 max-w-4xl text-[11px] leading-snug text-slate-500"></p>
+            <div id="toolbox-work" class="mt-3"></div>
+        </section>
+    </main>
+
+    <footer class="mx-auto w-full max-w-[1500px] px-4 pb-6">
+        <p class="max-w-4xl text-[10px] leading-snug text-slate-400">
+            Every tool runs in this tab: no file is uploaded and no request leaves the origin. The arithmetic is
+            written from the published definitions — IEC 61966-2-1 for sRGB, the SI and imperial defining constants
+            for the unit table, the block layout of each GPU texture format, the OpenGL and DirectX normal-map
+            conventions, and the glTF, Unreal and Unity channel layouts — and is covered by the project's release
+            gate. Planning aid only; confirm a material budget against the target device.
+        </p>
+    </footer>
+</div>
+
+<script type="module" src="../features/toolbox/page.js"></script>
+    <script type="module" src="../shared/site.js"></script>
+</body>
+</html>

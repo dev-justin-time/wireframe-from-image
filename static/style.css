@@ -33,6 +33,10 @@ body {
 .top .tag { color: var(--muted); font-size: 12px; }
 .status { margin-left: auto; color: var(--accent); font-size: 12px; }
 
+/* Undo and redo sit in the header, because a plan edit can come from any screen. */
+.top button.mini { padding: 4px 10px; font-size: 12px; }
+.top button.mini:disabled { opacity: .45; cursor: default; border-color: var(--line); }
+
 .shell { display: grid; grid-template-columns: 232px 1fr; min-height: calc(100vh - 45px); }
 
 .nav {
@@ -138,11 +142,37 @@ table.t .u { color: var(--muted); width: 70px; }
 .rp-table thead th { color: #0f172a; font-weight: 600; }
 .rp-foot { font-size: 11px; color: #64748b; margin: 14px 0 0; border-top: 1px solid #e2e8f0; padding-top: 10px; }
 
+@page { margin: 14mm 12mm; }
+
 @media print {
+  /* The studio around the sheet: navigation, inputs and hints stay on screen. */
+  .top, .nav, .view .row, .view .hint, .view .grid { display: none !important; }
   body { background: #fff; color: #000; }
-  .top, .nav, .view .row, .view .hint { display: none !important; }
   .shell { display: block; min-height: 0; }
   .view { padding: 0; max-width: none; }
+  a { color: #000; text-decoration: none; }
+  .note { color: #333; max-width: none; }
+  .view h2 { color: #000; }
+  /* A heading never ends a page with its table overleaf. */
+  .view h3 { color: #334155; break-after: avoid; break-inside: avoid; }
+
+  /* A long table paginates between rows, never through one: a bid line or a
+     code rule stays whole, and a <thead> repeats on every page it spans. */
+  table.t { border-collapse: collapse; break-inside: auto; }
+  table.t thead { display: table-header-group; }
+  table.t tr { break-inside: avoid; }
+  table.t th, table.t td { color: #000; border-bottom: 1px solid #cbd5e1; }
+  table.t th { color: #334155; }
+  table.t .u { color: #475569; }
+
+  /* Cards and list rows keep their own content together too. */
+  .cards { display: block; }
+  .card { background: none; border: 1px solid #cbd5e1; color: #000; margin-bottom: 6px; break-inside: avoid; }
+  .card b, .card span, .card a { color: #000; }
+  ul.plain li { break-inside: avoid; }
+  .err { color: #b91c1c; }
+  .ok { color: #15803d; }
+
   .report { box-shadow: none; border-radius: 0; padding: 0; max-width: none; }
   .report h3 { break-after: avoid; }
   .rp-table tr { break-inside: avoid; }

@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full dark">
+
+<head>
+    <meta charset="UTF-8">
+    <script src="../shared/error-reporting.js"></script>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Demo - Floorplan 3D</title>
+    <meta name="description" content="Try the live demo: draw a room, switch to 3D and walk through it, no sign-up needed.">
+    <link rel="canonical" href="https://dev-justin-time.github.io/floorplan_3d/pages/demo.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Floorplan 3D">
+    <meta property="og:title" content="Live Demo - Floorplan 3D">
+    <meta property="og:description" content="Try the live demo: draw a room, switch to 3D and walk through it, no sign-up needed.">
+    <meta property="og:url" content="https://dev-justin-time.github.io/floorplan_3d/pages/demo.html">
+    <meta property="og:image" content="../assets/images/hero-plan-1.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Live Demo - Floorplan 3D">
+    <meta name="twitter:description" content="Try the live demo: draw a room, switch to 3D and walk through it, no sign-up needed.">
+    <meta name="twitter:image" content="../assets/images/hero-plan-1.png">
+<link rel="stylesheet" href="../assets/tailwind.css">
+    <link rel="stylesheet" href="../assets/fonts/fonts.css">
+<style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        canvas {
+            outline: none;
+        }
+
+        .tool-btn.active {
+            background-color: #eff6ff;
+            color: #13a4ec;
+            border-color: #13a4ec;
+        }
+
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+
+        .dark ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+    </style>
+</head>
+
+<body class="h-full flex flex-col bg-gray-50 dark:bg-gray-900 font-display overflow-hidden">
+    <!-- Navbar -->
+    
+    <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 z-50 shadow-sm shrink-0">
+        <div class="flex items-center gap-4">
+            <a href="index.html" class="flex items-center gap-2 text-gray-900 hover:text-primary transition-colors">
+                <span class="material-symbols-outlined">arrow_back</span>
+                <span class="font-bold text-lg tracking-tight">Floorplan 3D</span>
+            </a>
+            
+            <!-- View Switcher -->
+            <div class="hidden md:flex bg-gray-100 p-1 rounded-lg items-center gap-1">
+                <button data-click="setView" data-args='["2d"]' id="btn-view-2d" class="px-3 py-1.5 text-sm font-medium rounded-md transition-all bg-white shadow text-gray-900">
+                    2D Editor
+                </button>
+                <button data-click="setView" data-args='["3d"]' id="btn-view-3d" class="px-3 py-1.5 text-sm font-medium rounded-md transition-all text-gray-600 hover:bg-gray-200">
+                    3D Preview
+                </button>
+                <button data-click="setView" data-args='["first-person"]' id="btn-view-fp" class="px-3 py-1.5 text-sm font-medium rounded-md transition-all text-gray-600 hover:bg-gray-200 flex items-center gap-1">
+                    <span class="material-symbols-outlined text-sm">directions_walk</span> Walk
+                </button>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <button id="demo-load-farmhouse" type="button" title="Load the Southern Farmhouse demo plan" class="flex items-center gap-2 px-3 py-2 bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg transition-colors text-sm font-medium shadow-sm">
+                <span class="material-symbols-outlined text-[20px]">cottage</span>
+                <span class="hidden lg:inline">Farmhouse Demo</span>
+            </button>
+            <button id="demo-new-plan" type="button" title="Clear the plan and start blank" class="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium text-gray-700 shadow-sm">
+                <span class="material-symbols-outlined text-[20px]">add_box</span>
+                <span class="hidden lg:inline">New</span>
+            </button>
+            <!-- Settings Dropdown -->
+            <div class="relative group">
+                <button class="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded-lg transition-colors text-sm font-medium text-gray-700">
+                    <span class="material-symbols-outlined text-[20px]">settings</span>
+                    Settings
+                </button>
+                <div class="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-100 hidden group-hover:block p-4 z-50">
+                    <h4 class="text-xs font-bold text-gray-400 uppercase mb-3">View Options</h4>
+                    <div class="space-y-3">
+                        <label class="flex items-center justify-between cursor-pointer">
+                            <span class="text-sm text-gray-700">Show Dimensions</span>
+                            <input type="checkbox" checked data-click="toggleDimensions" class="rounded border-gray-300 text-primary focus:ring-primary">
+                        </label>
+                        <label class="flex items-center justify-between cursor-pointer">
+                            <span class="text-sm text-gray-700">Show 2D Grid</span>
+                            <input type="checkbox" checked data-click="toggleGrid2D" class="rounded border-gray-300 text-primary focus:ring-primary">
+                        </label>
+                        <label class="flex items-center justify-between cursor-pointer">
+                            <span class="text-sm text-gray-700">Show 3D Grid</span>
+                            <input type="checkbox" checked data-click="toggleGrid3D" class="rounded border-gray-300 text-primary focus:ring-primary">
+                        </label>
+                        <label class="flex items-center justify-between cursor-pointer">
+                            <span class="text-sm text-gray-700">Show 3D Axes</span>
+                            <input type="checkbox" checked data-click="toggleAxes3D" class="rounded border-gray-300 text-primary focus:ring-primary">
+                        </label>
+                        <label class="flex items-center justify-between cursor-pointer">
+                            <span class="text-sm text-gray-700">Show Ceiling</span>
+                            <input type="checkbox" id="ceiling-toggle" data-click="toggleCeiling" class="rounded border-gray-300 text-primary focus:ring-primary">
+                        </label>
+                        <label class="flex items-center justify-between cursor-pointer">
+                            <span class="text-sm text-gray-700">Show Roof</span>
+                            <input type="checkbox" id="roof-toggle" data-click="toggleRoof" class="rounded border-gray-300 text-primary focus:ring-primary">
+                        </label>
+                        <div class="pt-2 border-t border-gray-100">
+                            <p class="text-xs text-gray-500 mb-2">Background Scale</p>
+                            <input type="range" id="bg-scale-slider" min="0.5" max="3" step="0.1" value="1" class="w-full accent-primary h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer" data-input="setBgScale">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Dropdown -->
+            <div class="relative group">
+                <button class="flex items-center gap-2 px-3 py-2 bg-gray-900 text-white hover:bg-gray-800 rounded-lg transition-colors text-sm font-medium shadow-sm">
+                    <span class="material-symbols-outlined text-[20px]">download</span>
+                    Export
+                </button>
+                <div class="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 hidden group-hover:block py-1 z-50">
+                    <button data-click="exportBlueprint" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[18px]">image</span> 2D Image
+                    </button>
+                    <button data-click="exportProject" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[18px]">data_object</span> Project JSON
+                    </button>
+                    <div class="h-px bg-gray-100 my-1"></div>
+                    <button data-click="export3D" data-args='["obj"]' class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[18px]">deployed_code</span> 3D Model (.obj)
+                    </button>
+                    <button data-click="export3D" data-args='["gltf"]' class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[18px]">view_in_ar</span> 3D Model (.gltf)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="flex-1 relative overflow-hidden bg-gray-100 dark:bg-gray-900">
+        <!-- Mobile View Switcher (Visible only on small screens) -->
+        <div class="md:hidden bg-white border-b border-gray-200 p-2 flex justify-center gap-2">
+            <button data-click="setView" data-args='["2d"]' class="flex-1 py-2 text-sm font-medium rounded bg-gray-100 text-gray-900">2D</button>
+            <button data-click="setView" data-args='["3d"]' class="flex-1 py-2 text-sm font-medium rounded text-gray-600">3D</button>
+        </div>
+
+        <!-- Floating Tools Bar (Visible in 2D) -->
+        <div id="tools-panel" class="absolute top-4 left-4 md:top-6 md:left-6 z-30 flex flex-col gap-2 transition-all duration-300">
+            
+            <!-- Mode Toggles -->
+            <div class="bg-white p-1.5 rounded-xl shadow-lg border border-gray-100 flex flex-col gap-1 w-12 items-center">
+                <button id="tool-select" class="tool-btn w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600" title="Select">
+                    <span class="material-symbols-outlined text-[20px]">near_me</span>
+                </button>
+                <button id="tool-wall" class="tool-btn w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 active" title="Draw Wall">
+                    <span class="material-symbols-outlined text-[20px]">edit</span>
+                </button>
+                <button id="tool-delete" class="tool-btn w-9 h-9 flex items-center justify-center rounded-lg hover:bg-red-50 text-gray-600 hover:text-red-500" title="Delete">
+                    <span class="material-symbols-outlined text-[20px]">delete</span>
+                </button>
+            </div>
+
+            <!-- Add Items Dropdowns -->
+            <div class="bg-white rounded-xl shadow-lg border border-gray-100 flex flex-col w-48 overflow-hidden">
+                
+                <!-- Structure -->
+                <div class="border-b border-gray-100">
+                    <button class="w-full px-4 py-3 flex items-center justify-between text-sm font-bold text-gray-700 hover:bg-gray-50" data-click="toggleDropdown" data-args='["structure-menu"]'>
+                        <div class="flex items-center gap-2"><span class="material-symbols-outlined text-primary">foundation</span> Structure</div>
+                        <span class="material-symbols-outlined text-[16px]">expand_more</span>
+                    </button>
+                    <div id="structure-menu" class="hidden bg-gray-50 p-2 grid grid-cols-3 gap-2">
+                        <button class="item-button p-2 rounded hover:bg-white hover:shadow-sm text-center" data-item="door" title="Door">
+                            <span class="material-symbols-outlined block mx-auto text-gray-600">door_front</span>
+                            <span class="text-[10px] text-gray-500">Door</span>
+                        </button>
+                        <button class="item-button p-2 rounded hover:bg-white hover:shadow-sm text-center" data-item="window" title="Window">
+                            <span class="material-symbols-outlined block mx-auto text-gray-600">window</span>
+                            <span class="text-[10px] text-gray-500">Window</span>
+                        </button>
+                        <button class="item-button p-2 rounded hover:bg-white hover:shadow-sm text-center" data-item="round_window" title="Round Win">
+                            <span class="material-symbols-outlined block mx-auto text-gray-600">circle</span>
+                            <span class="text-[10px] text-gray-500">Round</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Furniture -->
+                <div class="border-b border-gray-100">
+                    <button class="w-full px-4 py-3 flex items-center justify-between text-sm font-bold text-gray-700 hover:bg-gray-50" data-click="toggleDropdown" data-args='["furniture-menu"]'>
+                        <div class="flex items-center gap-2"><span class="material-symbols-outlined text-purple-500">chair</span> Furniture</div>
+                        <span class="material-symbols-outlined text-[16px]">expand_more</span>
+                    </button>
+                    <div id="furniture-menu" class="hidden bg-gray-50 p-2 grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+                        <button class="item-button p-2 rounded hover:bg-white hover:shadow-sm text-center" data-item="sofa">
+                            <span class="material-symbols-outlined block mx-auto text-gray-600">chair</span>
+                            <span class="text-[10px] text-gray-500">Sofa</span>
+                        </button>
+                        <button class="item-button p-2 rounded hover:bg-white hover:shadow-sm text-center" data-item="bed_queen">
+                            <span class="material-symbols-outlined block mx-auto text-gray-600">bed</span>
+                            <span class="text-[10px] text-gray-500">Bed</span>
+                        </button>
+                        <button class="item-button p-2 rounded hover:bg-white hover:shadow-sm text-center" data-item="dining_table">
+                            <span class="material-symbols-outlined block mx-auto text-gray-600">table_restaurant</span>
+                            <span class="text-[10px] text-gray-500">Table</span>
+                        </button>
+                        <button class="item-button p-2 rounded hover:bg-white hover:shadow-sm text-center" data-item="kitchen_cabinet">
+                            <span class="material-symbols-outlined block mx-auto text-gray-600">kitchen</span>
+                            <span class="text-[10px] text-gray-500">Cabinet</span>
+                        </button>
+                        <button class="item-button p-2 rounded hover:bg-white hover:shadow-sm text-center" data-item="toilet">
+                            <span class="material-symbols-outlined block mx-auto text-gray-600">wc</span>
+                            <span class="text-[10px] text-gray-500">Toilet</span>
+                        </button>
+                        <button class="item-button p-2 rounded hover:bg-white hover:shadow-sm text-center" data-item="bathtub">
+                            <span class="material-symbols-outlined block mx-auto text-gray-600">bathtub</span>
+                            <span class="text-[10px] text-gray-500">Bath</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Upload -->
+                <div>
+                    <button data-show="#upload-modal" class="w-full px-4 py-3 flex items-center gap-2 text-sm font-bold text-gray-700 hover:bg-gray-50 text-left">
+                        <span class="material-symbols-outlined text-orange-500">cloud_upload</span> Upload Plan
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Viewports Layer Stack -->
+        <div class="relative w-full h-full">
+            <!-- 2D Layer -->
+            <div id="view-2d" class="absolute inset-0 z-10 bg-white transition-opacity duration-300">
+                <canvas id="blueprint-canvas" class="block w-full h-full touch-none cursor-crosshair"></canvas>
+                
+                <!-- Hint Overlay -->
+                <div class="absolute bottom-6 left-1/2 -translate-x-1/2 bg-gray-900/80 backdrop-blur text-white px-4 py-2 rounded-full text-xs font-medium pointer-events-none">
+                    Click and drag to draw walls
+                </div>
+            </div>
+
+            <!-- 3D Layer -->
+            <div id="view-3d" class="absolute inset-0 z-0 opacity-0 pointer-events-none transition-opacity duration-300">
+                <div id="panorama-3d-view" class="absolute inset-0 w-full h-full">
+                    <canvas id="cv" class="w-full h-full block"></canvas>
+                    <div id="render-3d-view" class="w-full h-full absolute inset-0 hidden bg-gray-100"></div>
+                </div>
+                
+                <div id="nipple-container" class="absolute bottom-20 left-10 w-32 h-32 z-20 hidden"></div>
+                
+                <div id="walk-instructions" class="absolute top-4 left-1/2 -translate-x-1/2 bg-black/60 text-white px-6 py-2 rounded-full text-sm backdrop-blur-sm pointer-events-none hidden">
+                    Click to start • WASD to move • Mouse to look • ESC to exit
+                </div>
+                <!-- Perf HUD: the labs FPS dashboard as a status chip (docs/audit.md §7) -->
+                <div id="demo-perf-hud" class="hidden absolute bottom-3 right-3 z-20 bg-black/60 backdrop-blur text-white px-2.5 py-1 rounded-md text-[10px] font-mono pointer-events-none">—</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW: Floorplan Demo Strip (desktop only) -->
+    <div class="hidden md:block bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary text-base">architecture</span>
+                    Floorplan Engine Demos
+                </h2>
+                <span class="text-xs text-gray-400">Live from demo-floorplan-*.js</span>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                <!-- 2D ↔ 3D Sync Demo -->
+                <div class="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div class="px-3 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                        <span class="text-xs font-medium text-gray-700 dark:text-gray-200 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[16px] text-blue-500">compare_arrows</span>
+                            2D ↔ 3D Sync
+                        </span>
+                    </div>
+                    <div class="h-40 grid grid-cols-2">
+                        <canvas id="demo-sync-2d" class="w-full h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700"></canvas>
+                        <div id="demo-sync-3d" class="w-full h-full bg-gray-100 dark:bg-gray-900"></div>
+                    </div>
+                </div>
+
+                <!-- Material System Demo -->
+                <div class="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div class="px-3 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                        <span class="text-xs font-medium text-gray-700 dark:text-gray-200 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[16px] text-emerald-500">palette</span>
+                            Materials
+                        </span>
+                    </div>
+                    <div id="demo-material-system" class="h-40 relative"></div>
+                </div>
+
+                <!-- Floorplan Upload Demo -->
+                <div class="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div class="px-3 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                        <span class="text-xs font-medium text-gray-700 dark:text-gray-200 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[16px] text-purple-500">cloud_upload</span>
+                            AI Floorplan
+                        </span>
+                    </div>
+                    <div id="demo-floorplan-upload" class="h-40"></div>
+                </div>
+
+                <!-- Placement Constraints Demo -->
+                <div class="bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div class="px-3 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                        <span class="text-xs font-medium text-gray-700 dark:text-gray-200 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[16px] text-orange-500">grid_on</span>
+                            Placement Rules
+                        </span>
+                    </div>
+                    <div id="demo-placement-constraints" class="h-40"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div id="upload-modal" class="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 transform transition-all">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-900">Upload Floorplan</h3>
+                <button data-hide="#upload-modal" class="text-gray-400 hover:text-gray-600">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <div id="upload-area" class="border-2 border-dashed border-primary/30 rounded-xl bg-blue-50/50 p-8 text-center cursor-pointer hover:border-primary hover:bg-blue-50 transition-all group">
+                <div class="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                    <span class="material-symbols-outlined text-3xl">cloud_upload</span>
+                </div>
+                <p class="font-bold text-gray-900 mb-1">Click to upload</p>
+                <p class="text-sm text-gray-500">or drag and drop image file</p>
+                <input type="file" id="file-upload" class="hidden" accept="image/*,.json">
+            </div>
+
+            <div class="mt-6">
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Scale Adjustment</label>
+                <div class="flex items-center gap-3">
+                    <input type="range" min="0.5" max="3" step="0.1" value="1" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary" data-input="setBgScaleAndLabel">
+                    <span class="text-sm font-mono font-medium w-8 text-right">1x</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "/vendor/three/three.module.js",
+            "three/addons/": "/vendor/three/addons/",
+            "three/nodes": "/vendor/three/addons/nodes/Nodes.js",
+            "three-bvh-csg": "/vendor/three-bvh-csg/index.module.js",
+            "three-mesh-bvh": "/vendor/three-mesh-bvh/index.module.js"
+        }
+    }
+    </script>
+    
+    <script type="module" src="../demo/demo.js"></script>
+    <script type="module" src="../shared/site.js"></script>
+</body>
+
+</html>
+
