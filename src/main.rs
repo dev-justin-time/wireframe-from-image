@@ -100,6 +100,29 @@ fn usage() -> &'static str {
   35.28 mm/pt (a 1:100 plan) when the page has none."
 }
 
+/// A flag's value must be a number.
+///
+/// These used to fall back to the default on a parse failure, which is the one
+/// class of error a measuring tool must not swallow: `--mm-per-px 1O` kept
+/// 10 mm/px, and every quantity derived from it looked plausible and was wrong.
+fn numeric_arg(flag: &str, value: &str, allow_zero: bool) -> f32 {
+    let parsed = value.trim().parse::<f32>();
+    let ok = match parsed {
+        Ok(number) => number.is_finite() && (if allow_zero { number >= 0.0 } else { number > 0.0 }),
+        Err(_) => false,
+    };
+    if !ok {
+        let bound = if allow_zero {
+            "a number of zero or more"
+        } else {
+            "a number greater than zero"
+        };
+        eprintln!("{flag} must be {bound}, got {value:?}\n\n{}", usage());
+        std::process::exit(2);
+    }
+    parsed.unwrap()
+}
+
 /// `None` means "no image given": start the server.
 fn parse_args(args: &[String]) -> Option<Cli> {
     let mut cli = Cli {
@@ -130,16 +153,14 @@ fn parse_args(args: &[String]) -> Option<Cli> {
                     }
                 };
                 match arg {
-                    "--mm-per-px" => cli.mm_per_px = value.parse().unwrap_or(cli.mm_per_px),
+                    "--mm-per-px" => cli.mm_per_px = numeric_arg(arg, &value, false),
                     "--mm-per-pt" => {
-                        cli.mm_per_pt = value.parse().unwrap_or(cli.mm_per_pt);
+                        cli.mm_per_pt = numeric_arg(arg, &value, false);
                         cli.mm_per_pt_given = true;
                     }
-                    "--page" => cli.page = value.parse().unwrap_or(cli.page),
-                    "--wall-height" => cli.wall_height = value.parse().unwrap_or(cli.wall_height),
-                    "--stud-spacing" => {
-                        cli.stud_spacing_mm = value.parse().unwrap_or(cli.stud_spacing_mm)
-                    }
+                    "--page" => cli.page = numeric_arg(arg, &value, true) as usize,
+                    "--wall-height" => cli.wall_height = numeric_arg(arg, &value, false),
+                    "--stud-spacing" => cli.stud_spacing_mm = numeric_arg(arg, &value, false),
                     "--gltf" => cli.gltf = Some(value),
                     _ => cli.write_plan = Some(value),
                 }
@@ -395,11 +416,11 @@ fn inspect(cli: Cli) {
 
     let mesh = extrude(&lines, 10.0);
 
-    if let Err(err) = std::fs::create_dir_all("outputs") {
-        eprintln!("cannot create outputs dir: {err}");
+    if let Err(err) = std::fs::create_dir_all("outputs/models") {
+        eprintln!("cannot create outputs/models dir: {err}");
         return;
     }
-    let out = format!("outputs/{}.obj", Uuid::new_v4());
+    let out = format!("outputs/models/{}.obj", Uuid::new_v4());
     match std::fs::write(&out, mesh_to_obj(&mesh)) {
         Ok(()) => println!("wrote {out}"),
         Err(err) => eprintln!("cannot write {out}: {err}"),
@@ -613,7 +634,40 @@ fn number_field(text: &str, field: &str, default: f32) -> Result<f32, ApiError> 
     Ok(value)
 }
 
-/// Upload one image and get back the path of the generated OBJ under /outputs/,
+/// Keep `outputs/models/` bounded.
+///
+/// Every upload writes a fresh UUID pair and nothing else deletes them, so a
+/// long-running instance would accumulate every drawing it ever saw. The newest
+/// `MODEL_KEEP` files stay — the ones a client is most likely to still be
+/// showing — and the oldest are dropped.
+const MODEL_KEEP: usize = 400;
+
+fn prune_models(dir: &str) {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return;
+    };
+    let mut files: Vec<(std::time::SystemTime, std::path::PathBuf)> = entries
+        .flatten()
+        .filter_map(|entry| {
+            let path = entry.path();
+            if !path.is_file() {
+                return None;
+            }
+            let modified = entry.metadata().ok()?.modified().ok()?;
+            Some((modified, path))
+        })
+        .collect();
+    if files.len() <= MODEL_KEEP {
+        return;
+    }
+    files.sort_by(|a, b| a.0.cmp(&b.0));
+    for (_, path) in files.iter().take(files.len() - MODEL_KEEP) {
+        let _ = std::fs::remove_file(path);
+    }
+}
+
+/// Upload one image and get back the path of the generated OBJ under
+/// /outputs/models/,
 /// the workflow the readme documents with `curl -F file=@plan.png`. A PDF is not
 /// an image: it goes to /api/plan, which reads its vector paths.
 async fn upload_file(
@@ -645,9 +699,10 @@ async fn upload_file(
         let lines = extract_lines(&image);
         let obj = mesh_to_obj(&extrude(&lines, 10.0));
 
-        std::fs::create_dir_all("outputs")
-            .map_err(|err| ApiError::internal(format!("cannot create outputs: {err}")))?;
-        let filename = format!("outputs/{}.obj", Uuid::new_v4());
+        std::fs::create_dir_all("outputs/models")
+            .map_err(|err| ApiError::internal(format!("cannot create outputs/models: {err}")))?;
+        prune_models("outputs/models");
+        let filename = format!("outputs/models/{}.obj", Uuid::new_v4());
         std::fs::write(&filename, obj)
             .map_err(|err| ApiError::internal(format!("cannot write {filename}: {err}")))?;
         Ok(format!("/{filename}"))
@@ -662,6 +717,8 @@ struct Upload {
     bytes: axum::body::Bytes,
     name: String,
     mm_per_px: f32,
+    /// The caller pinned `mmPerPx` themselves; a raster's scale is then "given".
+    mm_per_px_given: bool,
     mm_per_pt: f32,
     /// The caller sent `mmPerPt=auto`: take the scale from the drawing itself.
     mm_per_pt_auto: bool,
@@ -680,6 +737,7 @@ async fn read_upload(
     let mut bytes: Option<axum::body::Bytes> = None;
     let mut name = String::from("plan");
     let mut mm_per_px = 10.0f32;
+    let mut mm_per_px_given = false;
     let mut mm_per_pt = 35.28f32;
     let mut mm_per_pt_auto = false;
     let mut mm_per_pt_given = false;
@@ -698,7 +756,10 @@ async fn read_upload(
         } else {
             let text = field.text().await.map_err(multipart_failure)?;
             match field_name.as_str() {
-                "mmPerPx" => mm_per_px = number_field(&text, "mmPerPx", mm_per_px)?,
+                "mmPerPx" => {
+                    mm_per_px = number_field(&text, "mmPerPx", mm_per_px)?;
+                    mm_per_px_given = true;
+                }
                 "mmPerPt" => {
                     if text.trim().eq_ignore_ascii_case("auto") {
                         mm_per_pt_auto = true;
@@ -719,6 +780,7 @@ async fn read_upload(
         bytes,
         name,
         mm_per_px,
+        mm_per_px_given,
         mm_per_pt,
         mm_per_pt_auto,
         mm_per_pt_given,
@@ -748,6 +810,7 @@ fn plan_report(upload: Upload) -> Result<serde_json::Value, ApiError> {
         bytes,
         name,
         mm_per_px,
+        mm_per_px_given,
         mm_per_pt,
         mm_per_pt_auto,
         mm_per_pt_given,
@@ -759,7 +822,16 @@ fn plan_report(upload: Upload) -> Result<serde_json::Value, ApiError> {
     // library at runtime, which the raster path never touches.
     let is_pdf = name.to_ascii_lowercase().ends_with(".pdf") || bytes.starts_with(b"%PDF");
     // Where the scale came from, so the report can say so.
-    let mut scale_source = if mm_per_pt_given { "given" } else { "default" };
+    // A raster has no points: its scale is mmPerPx, so `mmPerPt` cannot have set
+    // it, and a raster posted with `mmPerPx=5` is not "default" either. The
+    // metadata has to describe the conversion that actually happened.
+    let mut scale_source = if is_pdf {
+        if mm_per_pt_given { "given" } else { "default" }
+    } else if mm_per_px_given {
+        "given"
+    } else {
+        "default"
+    };
     let (lines, width, height, mm_per_px, raster) = if is_pdf {
         let temp = std::env::temp_dir().join(format!("blueprint3d-{}.pdf", Uuid::new_v4()));
         std::fs::write(&temp, &bytes)
@@ -850,12 +922,13 @@ fn plan_report(upload: Upload) -> Result<serde_json::Value, ApiError> {
         .to_string();
 
     let mesh = extrude(&lines, 10.0);
-    std::fs::create_dir_all("outputs")
-        .map_err(|err| ApiError::internal(format!("cannot create outputs: {err}")))?;
-    let filename = format!("outputs/{}.obj", Uuid::new_v4());
+    std::fs::create_dir_all("outputs/models")
+        .map_err(|err| ApiError::internal(format!("cannot create outputs/models: {err}")))?;
+    prune_models("outputs/models");
+    let filename = format!("outputs/models/{}.obj", Uuid::new_v4());
     std::fs::write(&filename, mesh_to_obj(&mesh))
         .map_err(|err| ApiError::internal(format!("cannot write {filename}: {err}")))?;
-    let gltf_filename = format!("outputs/{}.gltf", Uuid::new_v4());
+    let gltf_filename = format!("outputs/models/{}.gltf", Uuid::new_v4());
     std::fs::write(&gltf_filename, gltf::mesh_to_gltf(&mesh, &project))
         .map_err(|err| ApiError::internal(format!("cannot write {gltf_filename}: {err}")))?;
 
@@ -989,6 +1062,13 @@ fn app_with(state: AppState) -> Router {
         .route("/upload", post(upload_file))
         .route("/api/plan", post(api_plan))
         .nest_service("/outputs", ServeDir::new("outputs"))
+        // The standalone pages live in pages/ next to the studio, and they load
+        // ../shared/site.js (the nav), ../shared/error-reporting.js and
+        // ../static/nav-data.js. Serving those two directories on this origin is
+        // what makes the pages and the studio work on one port.
+        .nest_service("/pages", ServeDir::new("pages"))
+        .nest_service("/shared", ServeDir::new("shared"))
+        .nest_service("/static", ServeDir::new("static"))
         .fallback_service(ServeDir::new("static"))
         .with_state(state)
         .layer(DefaultBodyLimit::max(body_limit))
@@ -1018,8 +1098,8 @@ async fn main() {
 
     tracing_subscriber::fmt::init();
 
-    if let Err(err) = std::fs::create_dir_all("outputs") {
-        eprintln!("cannot create outputs dir: {err}");
+    if let Err(err) = std::fs::create_dir_all("outputs/models") {
+        eprintln!("cannot create outputs/models dir: {err}");
         std::process::exit(1);
     }
 
@@ -1071,6 +1151,15 @@ mod tests {
     #[test]
     fn the_pdf_fixture_reads_its_symbols_and_its_scale() {
         if !pdf::available() {
+            // A silent skip hides that the PDF half of the pipeline was never
+            // exercised. Where pdfium is expected — CI, a release check — set
+            // BLUEPRINT_REQUIRE_PDFIUM=1 and a missing library fails instead.
+            let required = std::env::var_os("BLUEPRINT_REQUIRE_PDFIUM").is_some();
+            assert!(
+                !required,
+                "pdfium is not available, so the PDF fixture cannot be read; \
+                 install pdfium or unset BLUEPRINT_REQUIRE_PDFIUM"
+            );
             eprintln!("skipped: pdfium is not installed, so no page can be read");
             return;
         }
@@ -1132,6 +1221,52 @@ mod tests {
     use tower::ServiceExt;
 
     const BOUNDARY: &str = "blueprint3d-test-boundary";
+
+    /// The pages live beside the studio and load `../shared/…` and
+    /// `../static/nav-data.js`, so all three directories have to be served on the
+    /// studio's origin for the shared nav to resolve on one port.
+    #[tokio::test]
+    async fn pages_are_served_beside_the_studio() {
+        let app = app();
+        for uri in [
+            "/",
+            "/pages/index.html",
+            "/pages/about.html",
+            "/shared/site.js",
+            "/shared/error-reporting.js",
+            "/static/nav-data.js",
+        ] {
+            let response = app
+                .clone()
+                .oneshot(
+                    Request::builder()
+                        .uri(uri)
+                        .body(Body::empty())
+                        .expect("build request"),
+                )
+                .await
+                .expect("router call");
+            assert_eq!(response.status(), StatusCode::OK, "{uri}");
+        }
+
+        // /pages/index.html is the page, not the studio shell it sits beside.
+        let page = app
+            .oneshot(
+                Request::builder()
+                    .uri("/pages/index.html")
+                    .body(Body::empty())
+                    .expect("build request"),
+            )
+            .await
+            .expect("router call");
+        let body = axum::body::to_bytes(page.into_body(), 4 * 1024 * 1024)
+            .await
+            .expect("read body");
+        assert!(
+            String::from_utf8_lossy(&body).contains("Floorplan 3D"),
+            "/pages/index.html served the studio shell instead of the page"
+        );
+    }
 
     /// A multipart body the way the studio's FormData posts it: one image file
     /// plus the three numeric overrides.
@@ -1264,7 +1399,7 @@ mod tests {
         assert_eq!(plan_rooms.len(), rooms.len(), "{fixture}: plan vs rooms");
 
         let obj = json["obj"].as_str().expect("obj");
-        assert!(obj.starts_with("/outputs/"), "{fixture}: obj path {obj}");
+        assert!(obj.starts_with("/outputs/models/"), "{fixture}: obj path {obj}");
         let path = obj.trim_start_matches('/');
         let text = std::fs::read_to_string(path)
             .unwrap_or_else(|err| panic!("{fixture}: read {path}: {err}"));
@@ -1284,7 +1419,7 @@ mod tests {
         // The glTF the studio offers must describe the same line set.
         assert_eq!(json["source"], "raster", "{fixture}: source");
         let gltf = json["gltf"].as_str().expect("gltf");
-        assert!(gltf.starts_with("/outputs/"), "{fixture}: gltf path {gltf}");
+        assert!(gltf.starts_with("/outputs/models/"), "{fixture}: gltf path {gltf}");
         let gltf_path = gltf.trim_start_matches('/');
         let document: Value = serde_json::from_str(
             &std::fs::read_to_string(gltf_path)

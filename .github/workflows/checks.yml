@@ -1,0 +1,35 @@
+name: checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  rust:
+    name: rust (test + check)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test --all-targets
+      - run: cargo check --all-targets
+
+  javascript:
+    name: javascript (parse + page wiring)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      # Every page script and studio module must at least parse. The vendored
+      # engine tree is excluded: it is verbatim upstream, with bare imports that
+      # only an import map resolves.
+      - name: parse every script
+        run: |
+          set -e
+          for file in $(git ls-files '*.js' '*.mjs' | grep -v -e '^static/vendor/' -e '^static/engines/' -e '^node_modules/'); do
+            node --input-type=module --check < "$file"
+          done
+      - name: page wiring
+        run: node outputs/scripts/check-pages.mjs

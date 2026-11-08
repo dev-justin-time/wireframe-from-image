@@ -1,0 +1,87 @@
+id,jurisdiction,code_ref,topic,requirement,min_in,max_in,min_mm,max_mm,unit,applies_to,severity,source_url
+IRC-WIDTH,IRC 2021,R311.7.1,width,"Stairway clear width at all points above handrail height and below headroom",36,,914,,in,Residential dwelling,error,https://up.codes/s/stairways-and-handrails
+IRC-HEADROOM,IRC 2021,R311.7.2,headroom,"Minimum headroom measured vertically from the nosing line",80,,2032,,in,Residential dwelling,error,https://up.codes/s/stairways-and-handrails
+IRC-FLIGHT-RISE,IRC 2021,R311.7.3,flight,"Maximum vertical rise of a single flight between floor levels or landings",,151,3835,,in,Residential dwelling,error,https://up.codes/s/stairways-and-handrails
+IRC-LANDING,IRC 2021,R311.7.6,landing,"Landing width not less than stair width; depth in direction of travel for a straight run",36,,914,,in,Residential dwelling,error,https://up.codes/s/landings-for-stairways
+IRC-RISER-MAX,IRC 2021,R311.7.5,riser,"Maximum stair riser height",,7.75,,197,in,Residential dwelling,error,https://up.codes/s/stairways-and-handrails
+IRC-TREAD-MIN,IRC 2021,R311.7.5,tread,"Minimum rectangular tread depth",10,,254,,in,Residential dwelling,error,https://up.codes/s/stairways-and-handrails
+IRC-TREAD-NOSING,IRC 2021,R311.7.5.2,tread,"Tread depth of 10 in requires a nosing; 11 in tread may omit nosing",10,11,254,279,in,Residential dwelling,info,https://up.codes/s/stairways-and-handrails
+IRC-NOSING-MIN,IRC 2021,R311.7.5.2,nosing,"Minimum nosing projection where a nosing is required",0.75,,19,,in,Residential dwelling,error,https://up.codes/s/stairways-and-handrails
+IRC-NOSING-MAX,IRC 2021,R311.7.5.2,nosing,"Maximum nosing projection",,1.25,,32,in,Residential dwelling,error,https://up.codes/s/stairways-and-handrails
+IRC-UNIFORMITY,IRC 2021,R311.7.5.1,uniformity,"Maximum variation between largest and smallest riser or tread in a flight",,,,9.5,in,Residential dwelling,error,https://up.codes/s/stairways-and-handrails
+IRC-HANDRAIL-MIN,IRC 2021,R311.7.8,handrail,"Handrail height above the tread nosing",34,,864,,in,Residential dwelling,error,https://up.codes/s/stairways-and-handrails
+IRC-HANDRAIL-MAX,IRC 2021,R311.7.8,handrail,"Maximum handrail height above the tread nosing",,38,,965,in,Residential dwelling,error,https://up.codes/s/stairways-and-handrails
+IRC-WINDER-WALKLINE,IRC 2021,R311.7.5,winder,"Minimum winder tread depth at the walkline (12 in from the narrow edge)",10,,254,,in,Residential dwelling,error,https://up.codes/s/stairways-and-handrails
+IRC-WINDER-CLEAR,IRC 2021,R311.7.5,winder,"Minimum winder tread depth within the clear stair width",6,,152,,in,Residential dwelling,error,https://up.codes/s/stairways-and-handrails
+IRC-WALKLNE-OFFSET,IRC 2021,R311.7.5,walkline,"Walkline location from the narrow edge of a winder or spiral tread",12,,305,,in,Residential dwelling,info,https://up.codes/s/stairways-and-handrails
+IRC-SPIRAL-WIDTH,IRC 2021,R311.7.10.1,spiral,"Spiral stairway clear width at and below the handrail",26,,660,,in,Residential dwelling,error,https://up.codes/s/spiral-stairways
+IRC-SPIRAL-TREAD,IRC 2021,R311.7.10.1,spiral,"Spiral tread depth at 12 in from the narrow edge",7.5,,190,,in,Residential dwelling,error,https://up.codes/s/spiral-stairways
+IRC-SPIRAL-RISER,IRC 2021,R311.7.10.1,spiral,"Maximum spiral stair riser height",,9.5,,241,in,Residential dwelling,error,https://up.codes/s/spiral-stairways
+IRC-SPIRAL-HEADROOM,IRC 2021,R311.7.10.1,spiral,"Minimum spiral stair headroom",78,,1981,,in,Residential dwelling,error,https://up.codes/s/spiral-stairways
+IBC-WIDTH, IBC 2021,1011.2,width,"Minimum stairway width; 36 in permitted where occupant load is less than 50",44,,1118,,in,Commercial,error,https://up.codes/s/stairways-and-handrails
+IBC-WIDTH-LOW, IBC 2021,1011.2,width,"Minimum stairway width where occupant load is less than 50",36,,914,,in,Commercial low occupancy,error,https://up.codes/s/stairways-and-handrails
+IBC-HEADROOM,IBC 2021,1011.3,headroom,"Minimum headroom measured vertically from the nosing line",80,,2032,,in,Commercial,error,https://up.codes/s/stairways-and-handrails
+IBC-LANDING,IBC 2021,1011.6,landing,"Landing depth equal to stair width or 48 in, whichever is less; straight run need not exceed 48 in",0,48,0,1219,in,Commercial,error,https://up.codes/s/stairway-landings
+IBC-RISER-MAX,IBC 2021,1011.5.2,riser,"Maximum stair riser height",,7,,178,in,Commercial,error,https://up.codes/s/stair-treads-and-risers
+IBC-RISER-MIN,IBC 2021,1011.5.2,riser,"Minimum stair riser height",4,,102,,in,Commercial,error,https://up.codes/s/stair-treads-and-risers
+IBC-TREAD-MIN,IBC 2021,1011.5.2,tread,"Minimum rectangular tread depth",11,,279,,in,Commercial,error,https://up.codes/s/stair-treads-and-risers
+IBC-R3-RISER,IBC 2021,1011.5.2,riser,"Maximum riser in R-3 or R-2 dwelling units",,7.75,,197,in,Residential R-3/R-2,error,https://up.codes/s/stair-treads-and-risers
+IBC-R3-TREAD,IBC 2021,1011.5.2,tread,"Minimum tread depth in R-3 or R-2 dwelling units",10,,254,,in,Residential R-3/R-2,error,https://up.codes/s/stair-treads-and-risers
+IBC-WINDER-WALKLINE,IBC 2021,1011.5.2,winder,"Minimum winder tread depth at the walkline",11,,279,,in,Commercial,error,https://up.codes/s/stair-treads-and-risers
+IBC-WINDER-CLEAR,IBC 2021,1011.5.2,winder,"Minimum winder tread depth within the clear stair width",10,,254,,in,Commercial,error,https://up.codes/s/stair-treads-and-risers
+IBC-UNIFORMITY,IBC 2021,1011.5.4,uniformity,"Maximum variation in riser height or tread depth in a flight",,,,9.5,in,Commercial,error,https://up.codes/s/stair-treads-and-risers
+IBC-NOSING-MAX,IBC 2021,1011.5.5.1,nosing,"Maximum tread nosing projection",,1.25,,32,in,Commercial,error,https://up.codes/s/stair-treads-and-risers
+IBC-FLIGHT-RISE,IBC 2021,1011.8,flight,"Maximum vertical rise of a single flight",,144,3658,,in,Commercial,error,https://up.codes/s/stairways-and-handrails
+IBC-CURVED-RADIUS,IBC 2021,1011.9,curved,"Smallest radius of a curved stair not less than twice the stair width; not required in R-3/R-2 dwellings",,,,0,in,Commercial,error,https://up.codes/s/curved-stairways
+IBC-SPIRAL-WIDTH,IBC 2021,1011.10,spiral,"Spiral stairway clear width at and below the handrail",26,,660,,in,Commercial,error,https://up.codes/s/spiral-stairways
+IBC-SPIRAL-TREAD,IBC 2021,1011.10,spiral,"Spiral tread depth at 12 in from the narrow edge",6.75,,171,,in,Commercial,error,https://up.codes/s/spiral-stairways
+IBC-SPIRAL-RISER,IBC 2021,1011.10,spiral,"Maximum spiral stair riser height",,9.5,,241,in,Commercial,error,https://up.codes/s/spiral-stairways
+IBC-SPIRAL-HEADROOM,IBC 2021,1011.10,spiral,"Minimum spiral stair headroom",78,,1981,,in,Commercial,error,https://up.codes/s/spiral-stairways
+IBC-SPIRAL-EGRESS,IBC 2021,1011.10,spiral,"Spiral stairs as an egress component only in dwelling units, small spaces up to 250 sq ft serving five occupants, or technical production areas",,,,,,Commercial,error,https://up.codes/s/spiral-stairways
+IBC-LANDING-DOOR,IBC 2021,1010.1.6,landing,"A door may not swing over a landing or reduce the required landing depth",,,,,,Commercial,error,https://up.codes/s/stairway-landings
+COMFORT-BLONDEL,Best practice,2R+T,comfort,"Two risers plus one tread should be between 24 in and 25 in; 25 in is the classic target",24,25,610,635,in,All stairs,info,https://www.finehomebuilding.com/project-guides/framing/2-rules-comfortable-stairs
+COMFORT-7-11,Best practice,7-11 rule,comfort,"A 7 in riser with an 11 in tread satisfies the 2R+T comfort target",7,7,178,178,in,All stairs,info,https://www.finehomebuilding.com/project-guides/framing/2-rules-comfortable-stairs
+OSHA-POLE-EGRESS,OSHA 1992,1910.21(a)(2),fire pole,"Fire poles are not an approved means of egress or access between levels",,,,,,Fire station,error,https://www.osha.gov/laws-regs/standardinterpretations/1992-05-29
+OSHA-POLE-OPENING,OSHA 1992,1910.21(a)(2),fire pole,"The pole floor opening must be guarded by a railing or cover",,,,,,Fire station,error,https://www.osha.gov/laws-regs/standardinterpretations/1992-05-29
+OSHA-POLE-GUARD,OSHA 1992,1910.23,fire pole,"Guardrail around the floor opening; a self-closing gate is recommended at the entry",42,,1067,,in,Fire station,error,https://www.osha.gov/laws-regs/standardinterpretations/1992-05-29
+OSHA-POLE-MAT,OSHA 1992,1910.144,fire pole,"Anti-skid landing mat and contrasting warning sign at the opening",32,,813,,in,Fire station,error,https://www.osha.gov/laws-regs/standardinterpretations/1992-05-29
+POLE-DIAMETER,Manufacturer,McIntire Model 19,fire pole,"Standard sliding pole diameter for drops up to 30 ft",2.5,,63.5,,in,Fire station,info,https://www.slidepole.com/m19_specifications.htm
+POLE-DIAMETER-MAX,Best practice,Fire pole practice,fire pole,"Practical maximum pole diameter",,3.5,,89,in,Fire station,info,https://www.ffam.org/fire-poles-a-historic-tradition-in-the-fire-service/
+POLE-OPENING,Manufacturer,McIntire Model 19,fire pole,"Finished floor opening diameter",37.5,,953,,in,Fire station,info,https://www.slidepole.com/m19_specifications.htm
+POLE-MAT,Manufacturer,McIntire Model 19,fire pole,"Standard landing mat diameter",32,,813,,in,Fire station,info,https://www.slidepole.com/m19_specifications.htm
+POLE-MAX-DROP,Manufacturer,McIntire Model 19,fire pole,"Maximum standard pole drop before an engineered pole is required",,360,,9144,in,Fire station,info,https://www.slidepole.com/m19_specifications.htm
+POLE-ABOVE-FLOOR,Best practice,Fire pole practice,fire pole,"Pole grab extension above the upper floor",36,,914,,in,Fire station,info,https://www.slidepole.com/m19_specifications.htm
+POLE-FLOOR-THICKNESS,Manufacturer,McIntire Model 19,fire pole,"Minimum floor thickness at the pole opening",5,,127,,in,Fire station,info,https://www.slidepole.com/m19_specifications.htm
+OUT-GUARD-TRIGGER,IRC 2021,R312.1.1,guard,"Guard required where the walking surface is more than 30 in above grade",30,,762,,in,Deck / porch,error,https://up.codes/s/guards
+OUT-GUARD-R,IRC 2021,R312.1.2,guard,"Residential guard height with no 4 in sphere pass",36,,914,,in,Deck / porch,error,https://up.codes/s/guards
+OUT-GUARD-C,IBC 2021,1015.2,guard,"Commercial guard height with 4 in sphere and 200 lb load",42,,1067,,in,Exterior egress / apartment,error,https://up.codes/s/guardrails
+OUT-HANDRAIL-R,IRC 2021,R311.7.8,handrail,"Handrail height above the nosing; one side minimum in a dwelling",34,38,864,965,in,Deck / porch,error,https://up.codes/s/stairways-and-handrails
+OUT-HANDRAIL-C,IBC 2021,1012.2,handrail,"Handrail height with a rail on both sides of an egress stair",34,38,864,965,in,Exterior egress / apartment,error,https://up.codes/s/handrails
+OUT-OPEN-RISER,IRC 2021,R311.7.5.1,riser,"Open risers must reject a 4 in sphere",,,102,,in,Deck stair,error,https://up.codes/s/stair-treads-and-risers
+OUT-FOOTING-DEPTH,IRC 2021,R403.1.4,footing,"Footing below frost line and at least 12 in below undisturbed grade",12,,305,,in,Deck / porch,error,https://up.codes/s/footings
+OUT-FOOTING-TYPICAL,IRC 2021,R403.1.4,footing,"Typical frost-depth pier in the northern US",36,42,914,1067,in,Deck / porch,info,https://up.codes/s/footings
+OUT-LEDGER,IRC 2021,R507.9.1.3,deck,"Ledger flashed, bolted per the span table and not supported by the deck",,,,,,standard,Deck,error,https://up.codes/s/deck-ledger
+OUT-FASTENERS,IRC 2021,R317.3,hardware,"Hot-dip galvanised, stainless or coated fasteners in exterior wood",,,,,,standard,All outdoor,error,https://up.codes/s/fasteners
+OUT-DOOR-LANDING,IRC 2021,R311.3,landing,"Landing at an exterior door, depth in the direction of travel",36,,914,,in,Porch / deck,error,https://up.codes/s/landings-for-stairways
+OUT-EGRESS-LANDING,IBC 2021,1011.6,landing,"Landing depth is the stair width or 48 in, whichever is less",,,48,,in,Exterior egress / apartment,error,https://up.codes/s/stairway-landings
+OUT-DISCHARGE,IBC 2021,1027.1,egress,"Exterior stair discharges to a public way or an exit path",,,,,,standard,Exterior egress,error,https://up.codes/s/exit-discharge
+OUT-ENCLOSURE,IBC 2021,1023.2,egress,"Stair enclosure and opening protection for building type and sprinklers",,,,,,standard,Apartment,error,https://up.codes/s/stair-enclosures
+OUT-ACCESSIBLE,ADA 2010,405,access,"Stairs are not an accessible route; provide a 1:12 ramp, lift or elevator",,,,,,standard,Public / commercial,error,https://www.access-board.gov/ada/
+OUT-CONCRETE-RISER,IBC 2021,1011.5.2,concrete,"Concrete stair riser height",4,7,102,178,in,Concrete walkway,error,https://up.codes/s/stair-treads-and-risers
+OUT-CONCRETE-COVER,ACI 318,20.5.1.3,concrete,"Concrete cover over reinforcement in exterior stairs",24,,610,,in,Concrete walkway,error,https://www.concrete.org/
+OUT-STRINGER-SPAN,NDS / IRC,Table R502.5,structure,"2x12 stringer span with both ends supported",,,156,,in,Deck stair,error,https://up.codes/s/floor-joist-span-tables
+OUT-WALKWAY-SLOPE,IRC 2021,R401.3,concrete,"Walkway and landing slope away from buildings",,,,,,ratio,Concrete walkway,error,https://up.codes/s/site-grading
+MODEL-ALT-WIDTH,IBC 2021,1011.14,steep access,"Alternating tread device clear width",20,,508,,in,Alternating tread device,error,https://up.codes/s/alternating-tread-devices
+MODEL-ALT-TREAD,IBC 2021,1011.14,steep access,"Alternating tread depth, nosing to nosing",8.5,,216,,in,Alternating tread device,error,https://up.codes/s/alternating-tread-devices
+MODEL-ALT-RISER,IBC 2021,1011.14,steep access,"Alternating tread maximum riser height",,9.5,,241,in,Alternating tread device,error,https://up.codes/s/alternating-tread-devices
+MODEL-ALT-RAIL,IBC 2021,1011.14,steep access,"Handrails on both sides of an alternating tread device",,,,,,,,Alternating tread device,error,https://up.codes/s/alternating-tread-devices
+MODEL-SHIP-WIDTH,IBC 2021,1011.16,steep access,"Ships ladder clear width",20,,508,,in,Ships ladder,error,https://up.codes/s/ships-ladders
+MODEL-SHIP-TREAD,IBC 2021,1011.16,steep access,"Ships ladder tread depth",5,,127,,in,Ships ladder,error,https://up.codes/s/ships-ladders
+MODEL-SHIP-RISER,IBC 2021,1011.16,steep access,"Ships ladder maximum riser height",,10,,254,in,Ships ladder,error,https://up.codes/s/ships-ladders
+MODEL-SHIP-SLOPE,IBC 2021,1011.16,steep access,"Ships ladder maximum slope; grab rails continue above the landing",,70,,70,deg,Ships ladder,error,https://up.codes/s/ships-ladders
+MODEL-SPIRAL-EGRESS,IBC 2021,1011.10,spiral,"Spiral stairways are limited as a means of egress and need an approved enclosure or occupancy limit",,,,,,,,Spiral stair,warning,https://up.codes/s/spiral-stairways
+MODEL-MONO-OPEN,IBC 2021,1011.5.5,mono stringer,"Open risers must not allow a 4 in sphere to pass between treads",4,,102,,in,Open riser stair,error,https://up.codes/s/stairway-open-risers
+OSHA-STAIR-WIDTH,OSHA 1910.25,1910.25(c)(3),industrial,"Fixed industrial stair minimum clear width",22,,559,,in,Industrial stair,error,https://www.osha.gov/laws-regs/regulations/standardnumber/1910/1910.25
+OSHA-STAIR-SLOPE,OSHA 1910.25,1910.25(b)(3),industrial,"Fixed industrial stair slope band",30,50,762,1270,deg,Industrial stair,error,https://www.osha.gov/laws-regs/regulations/standardnumber/1910/1910.25
+OSHA-STAIR-RISE,OSHA 1910.25,1910.25(d)(2),industrial,"Maximum riser height and minimum tread depth on an industrial stair",9.5,9.5,241,241,in,Industrial stair,error,https://www.osha.gov/laws-regs/regulations/standardnumber/1910/1910.25
+OSHA-STAIR-UNIFORM,OSHA 1910.25,1910.25(d)(2),industrial,"Riser and tread dimensions uniform within 0.25 in over the flight",,0.25,,6.4,in,Industrial stair,error,https://www.osha.gov/laws-regs/regulations/standardnumber/1910/1910.25

@@ -1,0 +1,168 @@
+#blueprint-container {
+    display: flex;
+    width: 100%;
+    height: 60vh;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+}
+
+#blueprint-2d-view {
+    width: 50%;
+    height: 100%;
+    padding: 10px;
+    box-sizing: border-box;
+    border-right: 1px solid #ccc;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f8f8f8;
+}
+
+#blueprint-2d-view img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+
+#eGraphic {
+    width: 50%;
+    height: 100%; 
+    position: relative;
+    touch-action: none; 
+}
+
+#cv {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+}
+
+#cv:active {
+    cursor: grabbing;
+}
+
+#blueprint-editor {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    background-color: #f0f0f0;
+}
+
+#blueprint-tools {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 10;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    max-width: calc(100% - 20px);
+}
+
+.tool-btn {
+    padding: 8px 16px;
+    background: white;
+    border: 2px solid #333;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'Noto Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.tool-btn:hover {
+    background: #f0f0f0;
+    transform: translateY(-1px);
+}
+
+/* Tool button active states managed by Tailwind/JS but fallback here */
+.tool-btn.active {
+    background-color: #eff6ff; /* blue-50 */
+    border-color: #13a4ec;
+    color: #13a4ec;
+}
+
+.view-btn {
+    background: #2563eb;
+    color: white;
+    border-color: #2563eb;
+}
+
+.view-btn:hover {
+    background: #1d4ed8;
+}
+
+#blueprint-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+    touch-action: none;
+    image-rendering: pixelated; /* Sharp lines for grid/ blueprint */
+}
+
+#render-3d-view {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: white;
+    display: none;
+}
+
+#render-3d-view.active {
+    display: block;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    /* Handled by Tailwind classes in demo.html now, keeping for Editor.html compatibility */
+    #blueprint-container {
+        flex-direction: column;
+        height: auto;
+    }
+
+    #blueprint-2d-view {
+        width: 100%;
+        height: 40vh;
+        border-right: none;
+        border-bottom: 1px solid #ccc;
+    }
+
+    #eGraphic {
+        width: 100%;
+        height: 50vh;
+    }
+}
+
+/* Editor specific overrides */
+#blueprint-canvas {
+    touch-action: none;
+    image-rendering: pixelated; /* Sharp lines for grid/ blueprint */
+}
+
+/* Hide scrollbar for cleaner UI in sidebar but allow scrolling */
+.hide-scroll::-webkit-scrollbar {
+    display: none;
+}
+.hide-scroll {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* 3D Viewport transitions */
+#view-2d, #view-3d {
+    transition: opacity 0.3s ease;
+}
+
+/* Toast animations */
+@keyframes slideUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}

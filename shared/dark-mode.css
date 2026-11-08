@@ -1,0 +1,75 @@
+/* Shared dark theme for suite pages (injected by shared/site.js).
+ *
+ * The studio pages (Editor, calc, index, …) already ship `dark:` variants and
+ * manage `html.dark` themselves. The designer suites (deck, framing,
+ * electrical, plumbing, wall, roof, …) were authored light-only, so when the
+ * global theme is dark this sheet remaps their light surfaces instead of
+ * editing every page. Canvases are left alone: plans stay on a light sheet
+ * for readability, exactly like the Editor's 2D view.
+ */
+
+html.dark body {
+    background-color: #0b1220;
+    color: #e2e8f0;
+    color-scheme: dark;
+}
+
+/* Cards / panels */
+html.dark body .bg-white { background-color: #16202f !important; }
+html.dark body .bg-slate-50 { background-color: #101825 !important; }
+html.dark body .bg-slate-100 { background-color: #1a2436 !important; }
+html.dark body .bg-gray-50 { background-color: #101825 !important; }
+html.dark body .bg-gray-100 { background-color: #1a2436 !important; }
+
+/* Text */
+html.dark body .text-slate-800,
+html.dark body .text-slate-900,
+html.dark body .text-slate-700,
+html.dark body .text-gray-800,
+html.dark body .text-gray-900 { color: #e2e8f0 !important; }
+html.dark body .text-slate-600,
+html.dark body .text-slate-500,
+html.dark body .text-gray-600,
+html.dark body .text-gray-500 { color: #94a3b8 !important; }
+html.dark body .text-slate-400,
+html.dark body .text-gray-400 { color: #64748b !important; }
+
+/* Borders */
+html.dark body .border-slate-200,
+html.dark body .border-slate-100,
+html.dark body .border-gray-200,
+html.dark body .border-gray-100 { border-color: #2b3a52 !important; }
+
+/* Inputs / selects */
+html.dark body input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]),
+html.dark body select,
+html.dark body textarea {
+    background-color: #101825 !important;
+    color: #e2e8f0 !important;
+    border-color: #2b3a52 !important;
+}
+html.dark body input[readonly] { background-color: #1a2436 !important; color: #94a3b8 !important; }
+html.dark body input[type="range"] { accent-color: #38bdf8; }
+
+/* Sticky table headers */
+html.dark body th { background-color: #16202f !important; }
+
+/* Hover states on light rows */
+html.dark body .hover\:bg-slate-50:hover { background-color: #1a2436 !important; }
+html.dark body .hover\:bg-gray-50:hover { background-color: #1a2436 !important; }
+
+/* Severity + metric text stays legible */
+html.dark body .severity-info { color: #94a3b8; }
+
+/* Site chrome injected by site.js */
+html.dark .site-menu-toggle { background: #16202f; color: #e2e8f0; border-color: #2b3a52; }
+html.dark .site-menu-toggle:hover { background: #1a2436; }
+html.dark .site-menu-panel { background: #16202f; border-color: #2b3a52; color: #e2e8f0; }
+html.dark .site-menu-group h4 { color: #94a3b8; }
+html.dark .site-menu-group a { color: #cbd5e1; }
+html.dark .site-menu-group a:hover { background: #1a2436; color: #fff; }
+html.dark .site-footer { background: #0b1220; border-color: #2b3a52; color: #94a3b8; }
+html.dark .site-footer h4 { color: #64748b; }
+html.dark .site-footer a { color: #94a3b8; }
+html.dark .site-footer-brand { color: #e2e8f0; }
+html.dark #project-related-strip { background: #101825 !important; border-color: #2b3a52 !important; }

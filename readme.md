@@ -8,7 +8,7 @@ symbols drawn in its openings — from a rendering of the page.
 
 ```bash
 # Inspect one image: prints the segments, the rooms and the takeoff,
-# and writes outputs/<uuid>.obj
+# and writes outputs/models/<uuid>.obj
 cargo run -- fixtures/floor_plan.png --mm-per-px 10
 
 # Also write the plan JSON the feature suites in ports/ read
@@ -40,10 +40,10 @@ cargo test
 | `--json` | — | Print that plan JSON to stdout. |
 | `--mm-per-pt <n>` | `35.28` | PDF only: millimetres of building per PDF point. 35.28 is a 1:100 plan at 72 dpi. |
 | `--page <n>` | `0` | PDF only: zero-based page to read. |
-| `--gltf <path>` | beside the OBJ | Write a glTF 2.0 LINES model instead of `outputs/<uuid>.gltf`. |
+| `--gltf <path>` | beside the OBJ | Write a glTF 2.0 LINES model instead of `outputs/models/<uuid>.gltf`. |
 
 Upload endpoint: `POST /upload` with a multipart body containing one image field,
-which returns the path of the generated OBJ under `/outputs/`.
+which returns the path of the generated OBJ under `/outputs/models/`.
 
 ```bash
 curl -F "file=@fixtures/floor_plan.png" http://127.0.0.1:3000/upload
@@ -118,6 +118,10 @@ modules, no build step, no installed dependencies. The 3D scene is
 vendored three.js build in `static/vendor/three/`; the 2D scene draws the same
 plan as a drawing sheet or a dark viewport.
 
+The standalone pages under `pages/` are served from the same origin (with
+`shared/` and `static/` beside them, so their shared nav resolves):
+<http://127.0.0.1:3000/pages/index.html> is the way in.
+
 One endpoint feeds all of it: `POST /api/plan` takes the same image plus optional
 `mmPerPx`, `mmPerPt`, `wallHeight` and `studSpacing` fields and returns the detected walls and
 rooms, the takeoff, the plan JSON and the URLs of the OBJ and glTF to draw.
@@ -138,8 +142,10 @@ version, whether PDFium loaded, the upload cap and the free extraction slots.
 | Structure | Framing, Deck, Roof, Stair, L stair, U stair, Spiral stair, Steep stair, Stair gallery/parts/glossary, Foundation |
 | Systems | Electrical, Lighting, Plumbing |
 | Site | Landscape, Site plan |
-| Project | Dashboard, Schedule, Permits and inspections, Bid builder, Report, Price book, Pricing, Calculator, Code rules |
+| Project | Dashboard, Schedule, Permits and inspections, Bid builder, Report†, Price book, Pricing, Calculator, Code rules† |
 | About | Home, Features, Gallery, About, Contact |
+
+† Studio-only screen: it lives in the studio's router and has no standalone page, so the shared page nav does not list it.
 
 `2D scene` and `3D scene` sit under Design: the first draws the extracted plan as
 a drawing sheet (grid, poche, dimensions, room labels, and the door swings and
@@ -155,7 +161,7 @@ nearest it, so a wall of openings reads flat like a drawing.
 existing corner, then to a 100 mm grid; a wall ending on another splits it, and
 the ported wall graph closes the rooms and measures them as you go. Corner
 handles move a corner instead: every wall end meeting there follows it, so a
-room stays closed, and a wall that collapses is dropped. The plan itsaves is the one every other screen reads. Every wall and item edit is undoable — Ctrl+Z, and Ctrl+Shift+Z or Ctrl+Y to redo — while Delete removes the selected wall and Escape clears the selection. `Plan studio` also takes vector and
+room stays closed, and a wall that collapses is dropped. The plan it saves is the one every other screen reads. Undo and redo live in the header because a plan edit can come from anywhere: the editor's walls and items, a 3D item drag, an upload, a DXF or survey import, or clearing the plan all share one history, reachable from any screen with the Undo and Redo buttons or Ctrl+Z, Ctrl+Shift+Z and Ctrl+Y. Delete removes the selected wall and Escape clears the selection. `Plan studio` also takes vector and
 survey files: a DXF through the ported parser (LINE, LWPOLYLINE, ARC and CIRCLE
 become walls), and a KML, KMZ or GeoJSON through the ported geo reader (polygon
 rings and lines become walls, projected to metres at the survey's real size with
@@ -199,7 +205,7 @@ matches `E:\floorplan_3d\features\`:
 | `bid/engine.js` | One contract price over the engines' itemised takeoff rows: overhead, profit, contingency, tax, billing |
 | `pricing/catalog.js` | Every quotable material line the engines price, with supplier quotes |
 | `bim/takeoff.js` | Walls as IFC classes with net area and volume |
-| `*/rules.js` | 135 code rules with the clause each one cites |
+| `*/rules.js` | 173 code rules with the clause each one cites |
 | `core/floorplan-graph.js`, `core/measurements.js` | The wall graph, its room faces, wall measurements and areas — the editor's geometry |
 | `features/import/dxf.js` | DXF lines, polylines, arcs and circles as plan segments in metres, with the units from the header |
 | `features/import/geo.js` | KML, KMZ and GeoJSON to lon/lat features, projected to local metres without distorting the survey |
@@ -208,7 +214,7 @@ matches `E:\floorplan_3d\features\`:
 | `scene/scene-elevation.js`, `scene/scene-gizmo.js` | Orthographic side views with the near walls cut, and the elevation drag/snap helpers |
 | `core/elevation-snap.js`, `features/advanced/snapping.js`, `features/transforms.js` | Run and vertical snapping, lock constraints and the elevation constants |
 
-Six small adapters do the mapping: `static/engines-bridge.js` for framing, deck,
+Six engine adapters do the mapping: `static/engines-bridge.js` for framing, deck,
 roof, electrical, plumbing, lighting, wall finishes and the rule libraries;
 `static/engines-extra.js` for the kitchen run, water features, the cross-suite
 bid, the BIM schedule, the price book and the dashboard roll-up; and
@@ -222,7 +228,7 @@ plan (metres) into an engine config — framing walls go into a storey, plumbing
 type ids into `createPlan` — and the design back into the `{cards, rows}` a screen
 renders. Unset inputs are dropped before the engine sees them, because an
 explicit `undefined` would overwrite a default. The `Code rules` screen lists and
-searches all five libraries.
+searches all seven libraries.
 
 The copied files are unmodified; compare with `cmp` against
 `E:\floorplan_3d\features\` after a re-copy (the command is in
@@ -247,18 +253,19 @@ each screen, records console errors and exceptions, flags a blank canvas,
 an unmounted viewer, horizontal overflow or `undefined`/`NaN`/`[object Object]`
 in the rendered text, uploads `fixtures/floor_plan.png` through the Plan studio
 form, follows that plan into every screen, and reloads a deep link to prove the
-plan survives. Screenshots and `report.json` land in `outputs/ui`.
+plan survives. Screenshots and `report.json` land in `outputs/ui`, and the rest of
+`outputs/` is described in `outputs/README.md`.
 
 With `scene-3d` in the route list it also sweeps the four elevation sides: it
 sets each side, records which side the viewer reports, saves one screenshot
 clipped to the viewport per side and compares the images and the near-wall cut.
 `ELEVATIONS=0` skips that sweep.
 
-`outputs/probe-screens.mjs` drives the four slices that have interaction: it
+`outputs/scripts/probe-screens.mjs` drives the four slices that have interaction: it
 seeds a known plan, drags a wall and a corner on the editor canvas, imports a DXF
 and a KML through their Plan studio buttons, ticks the services sheet and checks the layer drawings
 painted, then toggles wireframe, hide-walls and grid on the 3D scene and reads
-the meshes back. `outputs/probe-plan-edit.mjs` covers the graph, the DXF parser
+the meshes back. `outputs/scripts/probe-plan-edit.mjs` covers the graph, the DXF parser
 and the layer model in Node.
 
 ```bash
@@ -406,11 +413,3 @@ chrome --headless=new --no-pdf-header-footer \
   --print-to-pdf=fixtures/symbol_plan.pdf fixtures/symbol_plan.html
 ```
 
-## Next step
-
-PDF vector extraction via PDFium, so architectural plans are read from source
-geometry instead of raster pixels.
-
-```text
-PDF -> PDFium -> extract vector paths -> convert to lines -> extrude -> OBJ / glTF
-```

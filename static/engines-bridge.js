@@ -44,6 +44,8 @@ import { RULES as DECK_RULES, searchRules as searchDeckRules } from './engines/f
 import { RULES as LIGHTING_RULES, searchRules as searchLightingRules } from './engines/features/lighting/rules.js';
 import { RULES as PLUMBING_RULES, searchRules as searchPlumbingRules } from './engines/features/plumbing/rules.js';
 import { RULES as ELECTRICAL_RULES, searchRules as searchElectricalRules } from './engines/features/electrical/rules.js';
+import { KITCHEN_RULES } from './engines/features/kitchen/rules.js';
+import { RULES as LANDSCAPE_RULES, searchRules as searchLandscapeRules } from './engines/features/landscape/rules.js';
 
 const f = (value, digits = 2) => (Number.isFinite(Number(value)) ? Number(value) : 0).toFixed(digits);
 const n = (value, fallback = 0) => {
@@ -420,12 +422,25 @@ export function finishResult(plan, v = {}) {
 
 // ---- code rules ------------------------------------------------------------
 
+// The kitchen register ships without a search helper, so match the same fields
+// the other libraries' searchRules does: the clause, the guideline and the
+// engine checks the rule points at.
+function searchKitchenRules(query = '') {
+  const term = String(query).trim().toLowerCase();
+  if (!term) return KITCHEN_RULES;
+  return KITCHEN_RULES.filter((rule) => [
+    rule.title, rule.code, rule.summary, rule.category, ...(rule.checkIds || []),
+  ].join(' ').toLowerCase().includes(term));
+}
+
 const LIBRARIES = [
   { id: 'framing', label: 'Framing', rules: FRAMING_RULES, search: searchFramingRules },
   { id: 'deck', label: 'Deck', rules: DECK_RULES, search: searchDeckRules },
   { id: 'lighting', label: 'Lighting', rules: LIGHTING_RULES, search: searchLightingRules },
   { id: 'plumbing', label: 'Plumbing', rules: PLUMBING_RULES, search: searchPlumbingRules },
   { id: 'electrical', label: 'Electrical', rules: ELECTRICAL_RULES, search: searchElectricalRules },
+  { id: 'kitchen', label: 'Kitchen', rules: KITCHEN_RULES, search: searchKitchenRules },
+  { id: 'landscape', label: 'Landscape & water', rules: LANDSCAPE_RULES, search: searchLandscapeRules },
 ];
 
 export const ruleLibraries = LIBRARIES.map(({ id, label, rules }) => ({ id, label, count: rules.length }));

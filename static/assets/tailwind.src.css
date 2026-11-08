@@ -1,0 +1,4 @@
+/* Source for the compiled stylesheet. Run `npm run build:css` after editing. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

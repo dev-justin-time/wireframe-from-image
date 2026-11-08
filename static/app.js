@@ -50,33 +50,9 @@ import { createHistory } from './plan-history.js';
 import { reportModel } from './report-data.js';
 import { reportPdf } from './report-pdf.js';
 import { FARMHOUSE } from './demo/farmhouse/manifest.js';
-
-const GROUPS = [
-  ['Design', ['plan-studio', 'editor', 'scene-2d', 'scene-3d', 'app', 'wall-designer', 'kitchen-designer', 'toolbox', 'demo', 'webgpu-demo']],
-  ['Structure', ['framing-designer', 'deck-designer', 'roof-designer', 'stair-designer', 'stair-l-designer',
-    'stair-u-designer', 'stair-spiral-designer', 'stair-steep-designer', 'stair-gallery', 'stair-parts',
-    'stair-glossary', 'foundation-designer']],
-  ['Systems', ['electrical-designer', 'lighting-designer', 'plumbing-designer']],
-  ['Site', ['landscape-designer', 'site-plan']],
-  ['Project', ['project-dashboard', 'project-schedule', 'permits-inspections', 'bid-builder', 'report',
-    'price-book', 'pricing', 'calc', 'code-rules']],
-  ['About', ['index', 'features', 'gallery', 'about', 'contact']],
-];
-
-const TITLES = {
-  'plan-studio': 'Plan studio', 'code-rules': 'Code rules', editor: 'Editor', 'scene-2d': '2D scene', 'scene-3d': '3D scene',
-  app: 'App', 'wall-designer': 'Wall designer',
-  'kitchen-designer': 'Kitchen designer', toolbox: 'Toolbox', demo: 'Demo', 'webgpu-demo': 'WebGPU demo',
-  'framing-designer': 'Framing designer', 'deck-designer': 'Deck designer', 'roof-designer': 'Roof designer',
-  'stair-designer': 'Stair designer', 'stair-l-designer': 'L stair', 'stair-u-designer': 'U stair',
-  'stair-spiral-designer': 'Spiral stair', 'stair-steep-designer': 'Steep stair', 'stair-gallery': 'Stair gallery',
-  'stair-parts': 'Stair parts', 'stair-glossary': 'Stair glossary', 'foundation-designer': 'Foundation designer',
-  'electrical-designer': 'Electrical designer', 'lighting-designer': 'Lighting designer',
-  'plumbing-designer': 'Plumbing designer', 'landscape-designer': 'Landscape designer', 'site-plan': 'Site plan',
-  'project-dashboard': 'Project dashboard', 'project-schedule': 'Schedule', 'permits-inspections': 'Permits and inspections',
-  'bid-builder': 'Bid builder', report: 'Report', 'price-book': 'Price book', pricing: 'Pricing', calc: 'Calculator',
-  index: 'Home', features: 'Features', gallery: 'Gallery', about: 'About', contact: 'Contact',
-};
+// The screens are named once, in nav-data.js, because the pages under pages/
+// render the same list in their shared nav (../shared/site.js).
+import { GROUPS, TITLES } from './nav-data.js';
 
 // The last detected plan is kept in this browser, so a reload does not throw
 // away the plan every other screen reads. The OBJ stays on the server under
@@ -159,6 +135,11 @@ function redoPlan() {
   if (!next) { setStatus('nothing to redo'); return; }
   restorePlan(next.plan, 'redo');
 }
+
+// The header buttons are the same history from every screen; the editor keeps its
+// own pair, so both are wired to the one stack.
+document.getElementById('undo')?.addEventListener('click', undoPlan);
+document.getElementById('redo')?.addEventListener('click', redoPlan);
 
 // The shortcuts travel with the history, so they work on every screen. Typing in
 // a field is never a shortcut, the guard the editor and CivilGPT's hook share.
@@ -1137,7 +1118,6 @@ function editor(root) {
   let cursor = null;
   let down = null;
   let travel = 0;
-  const history = createHistory();
 
   root.innerHTML = `<h2>Editor</h2>
     <p class="note">Draw the walls yourself: press and drag on the canvas. An endpoint snaps to an existing
@@ -1501,18 +1481,8 @@ function editor(root) {
     });
   }
 
-  const undoButton = root.querySelector('#ed-undo');
-  const redoButton = root.querySelector('#ed-redo');
-
-  /** Everything an undo has to put back: the walls and the plan they built. */
-  const snapshot = () => ({
-    walls: walls.map((wall) => ({ ...wall })),
-    plan: plan ? JSON.parse(JSON.stringify(plan)) : null,
-  });
-
   function refresh(note = '') {
-    undoButton.disabled = !history.canUndo;
-    redoButton.disabled = !history.canRedo;
+    syncHistoryButtons();
     setStatus();
     draw();
     summary();
@@ -1523,7 +1493,7 @@ function editor(root) {
   }
 
   function applyPlan(next, note = '') {
-    history.record(snapshot());
+    recordPlan();
     plan = next;
     state.data = next;
     savePlan(next);
@@ -1548,17 +1518,8 @@ function editor(root) {
 
   /** A wall edit: remember the state it starts from, then apply it. */
   function commit(next, note) {
-    history.record(snapshot());
+    recordPlan();
     applyWalls(next, note);
-  }
-
-  /** Put a snapshot back: the walls, the items, the saved plan and the screen. */
-  function restore(snap, note) {
-    walls = snap.walls.map((wall) => ({ ...wall }));
-    selected = -1;
-    plan = snap.plan;
-    if (plan) { state.data = plan; savePlan(plan); } else { clearPlan(); }
-    refresh(note);
   }
 
   const removeSelected = () => {
@@ -1568,16 +1529,8 @@ function editor(root) {
     commit(removeWall(walls, index), `wall ${index + 1} removed`);
   };
   root.querySelector('#ed-del').onclick = removeSelected;
-  undoButton.onclick = () => {
-    const previous = history.undo(snapshot());
-    if (!previous) { msg.textContent = 'nothing to undo'; return; }
-    restore(previous, 'undo');
-  };
-  redoButton.onclick = () => {
-    const next = history.redo(snapshot());
-    if (!next) { msg.textContent = 'nothing to redo'; return; }
-    restore(next, 'redo');
-  };
+  root.querySelector('#ed-undo').onclick = undoPlan;
+  root.querySelector('#ed-redo').onclick = redoPlan;
   root.querySelector('#ed-connect').onclick = () => {
     const pair = segmentPair();
     if (!pair) return;
@@ -1689,18 +1642,6 @@ function editor(root) {
     // Typing in a field is never a shortcut: the guard CivilGPT's hook used.
     if (['INPUT', 'SELECT', 'TEXTAREA'].includes(active?.tagName)
       || active?.getAttribute('contenteditable') === 'true') return;
-    const command = event.ctrlKey || event.metaKey;
-    const key = event.key.toLowerCase();
-    if (command && key === 'z' && !event.shiftKey) {
-      event.preventDefault();
-      undoButton.click();
-      return;
-    }
-    if ((command && key === 'y') || (command && event.shiftKey && key === 'z')) {
-      event.preventDefault();
-      redoButton.click();
-      return;
-    }
     if (event.key === 'Escape') {
       if (selected < 0) return;
       selected = -1;
@@ -2258,7 +2199,7 @@ function gallery(root) {
       ['fixtures/angled_plan.png', '6 walls including a diagonal', '10 mm/px'],
     ])}
     <h3>Outputs</h3>
-    <p class="hint">Every detection writes outputs/&lt;uuid&gt;.obj, served at /outputs. The link on each
+    <p class="hint">Every detection writes outputs/models/&lt;uuid&gt;.obj, served at /outputs/models. The link on each
       plan screen opens the one for the current upload.</p>
     <h3>Regenerate</h3>
     <p class="hint">cargo run --example make_fixtures && cargo test</p>`;

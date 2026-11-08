@@ -32,11 +32,11 @@ The stair and elevation modules import `three`; only the browser can resolve
 that, through the `import map` in `static/index.html`. `scene-gizmo.js` also
 imports `three/addons/controls/TransformControls.js`, which is vendored at
 `static/vendor/three/addons/controls/` from the same three r160 build — copy it
-from `E:\floorplan_3d\vendor\three\addons\controls\` if three is ever bumped. `outputs/probe-extra.mjs` covers every
+from `E:\floorplan_3d\vendor\three\addons\controls\` if three is ever bumped. `outputs/scripts/probe-extra.mjs` covers every
 DOM-free adapter in Node, and `tools/ui-check.mjs` covers the stair screens in
 headless Chrome.
 
 A re-copy can add a module an engine now imports (`validateFeatureModules` in
 `tests/` does the same thing for the upstream tree). The smoke script
-`outputs/probe-bridge.mjs` imports every mirrored entry point and calls the
+`outputs/scripts/probe-bridge.mjs` imports every mirrored entry point and calls the
 bridge, so a missing dependency shows up there first.
